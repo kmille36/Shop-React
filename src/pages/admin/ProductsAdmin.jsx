@@ -3,13 +3,15 @@ import { useAdmin } from '../../context/AdminContext'
 import { useStore } from '../../context/StoreContext'
 import { useToast } from '../../context/ToastContext'
 import { formatPrice } from '../../utils/format'
+import { downloadCSV } from '../../utils/csv'
+import { toLocalInput, fromLocalInput, flashActive } from '../../utils/flash'
 import Ic from '../../components/Ic'
 import ProductImg from '../../components/ProductImg'
 
 const CATS = ['Điện thoại', 'Laptop', 'Tablet', 'Phụ kiện', 'Game']
 
 export default function ProductsAdmin() {
-  const { getProducts, updateProduct, addProduct, deleteProduct, getSold } = useAdmin()
+  const { getProducts, updateProduct, addProduct, deleteProduct, getSold, importProducts } = useAdmin()
   const { getStock } = useStore()
   const { toast } = useToast()
   const [q, setQ] = useState('')
@@ -30,7 +32,38 @@ export default function ProductsAdmin() {
     <div className="admin-content">
       <div className="admin-toolbar">
         <input className="admin-search" placeholder="🔍 Tìm sản phẩm..." value={q} onChange={e => setQ(e.target.value)} />
+        <button className="ghost-btn" onClick={() => {
+          downloadCSV(`products-${new Date().toISOString().slice(0, 10)}.csv`, [
+            ['ID', 'Tên', 'Danh mục', 'Giá', 'Giá gốc', 'Tồn kho', 'Flash'],
+            ...getProducts().map(p => [p.id, p.name, p.category, p.price, p.oldPrice || '', getStock(p), p.flash ? 'Có' : '']),
+          ])
+          toast('Đã xuất danh sách sản phẩm')
+        }}><Ic e="📤" size={15} /> CSV</button>
         <button className="primary-btn" onClick={() => setAdding(true)}><Ic e="✨" size={16} /> Thêm sản phẩm</button>
+        <label className="ghost-btn import-btn">
+          <Ic e="📥" size={15} /> Nhập CSV
+          <input type="file" accept=".csv" style={{ display: 'none' }} onChange={e => {
+            const file = e.target.files[0]
+            if (!file) return
+            const reader = new FileReader()
+            reader.onload = () => {
+              try {
+                const lines = String(reader.result).split(/\r?\n/).filter(l => l.trim())
+                const header = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/^"|"$/g, ''))
+                const rows = lines.slice(1).map(l => {
+                  const cells = l.split(',').map(c => c.trim().replace(/^"|"$/g, ''))
+                  const o = {}
+                  header.forEach((h, i) => { o[h] = cells[i] || '' })
+                  return { name: o.name || o.tên, category: o.category || o.danh_mục, price: o.price || o.giá, oldPrice: o.oldprice || o.giá_gốc, stock: o.stock || o.tồn_kho, image: o.image || o.ảnh, desc: o.desc || o.mô_tả }
+                })
+                const n = importProducts(rows)
+                toast(`Đã nhập ${n} sản phẩm từ CSV!`)
+              } catch (err) { toast('File CSV không hợp lệ!', 'error') }
+            }
+            reader.readAsText(file)
+            e.target.value = ''
+          }} />
+        </label>
       </div>
 
       <div className="admin-table-wrap glass">
@@ -56,7 +89,7 @@ export default function ProductsAdmin() {
                       {left <= 0 ? 'Hết' : left}
                     </span>
                   </td>
-                  <td>{p.flash ? '⚡' : '—'}</td>
+                  <td>{p.flash ? (flashActive(p) ? <span title="Đang chạy">⚡ Đang chạy</span> : <span className="muted" title="Chưa bắt đầu hoặc đã kết thúc">⚡ {p.flashStart && Date.now() < p.flashStart ? 'Chờ đến ' + new Date(p.flashStart).toLocaleString('vi-VN') : 'Hết lịch'}</span>) : '—'}</td>
                   <td className="row-actions">
                     <button className="ghost-btn small" onClick={() => setEditing(p)}><Ic e="✏️" size={14} /> Sửa</button>
                     <button className="ghost-btn small danger" onClick={() => remove(p)}><Ic e="🗑️" size={14} /></button>
@@ -75,12 +108,20 @@ export default function ProductsAdmin() {
 }
 
 function EditModal({ product, onClose, onSave }) {
-  const [f, setF] = useState({ price: product.price, oldPrice: product.oldPrice || '', stock: product.stock, name: product.name, category: product.category, flash: product.flash, image: product.image, desc: product.desc || '' })
+  const [f, setF] = useState({ price: product.price, oldPrice: product.oldPrice || '', stock: product.stock, name: product.name, category: product.category, flash: product.flash, image: product.image, desc: product.desc || '', flashStart: toLocalInput(product.flashStart), flashEnd: toLocalInput(product.flashEnd) })
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="glass modal" onClick={e => e.stopPropagation()}>
         <div className="modal-head"><h2><Ic e="✏️" size={18} /> Sửa sản phẩm</h2><button className="close-btn" onClick={onClose}><Ic e="✕" size={18} /></button></div>
-        <form className="auth-form" onSubmit={e => { e.preventDefault(); onSave({ ...f, oldPrice: f.oldPrice === '' ? null : Number(f.oldPrice), stock: Number(f.stock), price: Number(f.price) }) }}>
+        <form className="auth-form" onSubmit={e => {
+        e.preventDefault()
+        onSave({
+          ...f, oldPrice: f.oldPrice === '' ? null : Number(f.oldPrice),
+          stock: Number(f.stock), price: Number(f.price),
+          flashStart: f.flash ? fromLocalInput(f.flashStart) : undefined,
+          flashEnd: f.flash ? fromLocalInput(f.flashEnd) : undefined,
+        })
+      }}>
           <label>Tên <input required value={f.name} onChange={e => setF({ ...f, name: e.target.value })} /></label>
           <div className="form-2col">
             <label>Giá <input required type="number" value={f.price} onChange={e => setF({ ...f, price: e.target.value })} /></label>
@@ -97,6 +138,16 @@ function EditModal({ product, onClose, onSave }) {
           <label>Ảnh (URL) <input value={f.image} onChange={e => setF({ ...f, image: e.target.value })} placeholder="/images/... hoặc emoji" /></label>
           <label>Mô tả <textarea rows="2" value={f.desc} onChange={e => setF({ ...f, desc: e.target.value })} /></label>
           <label className="pay-opt"><input type="checkbox" checked={f.flash} onChange={e => setF({ ...f, flash: e.target.checked })} /><span><Ic e="⚡" size={15} /> Flash sale</span></label>
+          {f.flash && (
+            <div className="form-2col">
+              <label>Bắt đầu (trống = ngay)
+                <input type="datetime-local" value={f.flashStart} onChange={e => setF({ ...f, flashStart: e.target.value })} />
+              </label>
+              <label>Kết thúc (trống = hết hôm nay)
+                <input type="datetime-local" value={f.flashEnd} onChange={e => setF({ ...f, flashEnd: e.target.value })} />
+              </label>
+            </div>
+          )}
           <button className="primary-btn" type="submit"><Ic e="💾" size={16} /> Lưu thay đổi</button>
         </form>
       </div>
@@ -105,12 +156,19 @@ function EditModal({ product, onClose, onSave }) {
 }
 
 function AddModal({ onClose, onSave }) {
-  const [f, setF] = useState({ name: '', price: '', oldPrice: '', stock: 10, category: 'Phụ kiện', flash: false, image: '📦', desc: '' })
+  const [f, setF] = useState({ name: '', price: '', oldPrice: '', stock: 10, category: 'Phụ kiện', flash: false, image: '📦', desc: '', flashStart: '', flashEnd: '' })
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="glass modal" onClick={e => e.stopPropagation()}>
         <div className="modal-head"><h2><Ic e="✨" size={18} /> Thêm sản phẩm</h2><button className="close-btn" onClick={onClose}><Ic e="✕" size={18} /></button></div>
-        <form className="auth-form" onSubmit={e => { e.preventDefault(); onSave({ ...f, price: Number(f.price), oldPrice: f.oldPrice ? Number(f.oldPrice) : null, stock: Number(f.stock) }) }}>
+        <form className="auth-form" onSubmit={e => {
+        e.preventDefault()
+        onSave({
+          ...f, price: Number(f.price), oldPrice: f.oldPrice ? Number(f.oldPrice) : null, stock: Number(f.stock),
+          flashStart: f.flash ? fromLocalInput(f.flashStart) : undefined,
+          flashEnd: f.flash ? fromLocalInput(f.flashEnd) : undefined,
+        })
+      }}>
           <label>Tên <input required value={f.name} onChange={e => setF({ ...f, name: e.target.value })} /></label>
           <div className="form-2col">
             <label>Giá <input required type="number" value={f.price} onChange={e => setF({ ...f, price: e.target.value })} /></label>
@@ -127,6 +185,16 @@ function AddModal({ onClose, onSave }) {
           <label>Ảnh (URL hoặc emoji) <input value={f.image} onChange={e => setF({ ...f, image: e.target.value })} placeholder="/images/... hoặc 📱" /></label>
           <label>Mô tả <textarea rows="2" value={f.desc} onChange={e => setF({ ...f, desc: e.target.value })} /></label>
           <label className="pay-opt"><input type="checkbox" checked={f.flash} onChange={e => setF({ ...f, flash: e.target.checked })} /><span><Ic e="⚡" size={15} /> Flash sale</span></label>
+          {f.flash && (
+            <div className="form-2col">
+              <label>Bắt đầu (trống = ngay)
+                <input type="datetime-local" value={f.flashStart} onChange={e => setF({ ...f, flashStart: e.target.value })} />
+              </label>
+              <label>Kết thúc (trống = hết hôm nay)
+                <input type="datetime-local" value={f.flashEnd} onChange={e => setF({ ...f, flashEnd: e.target.value })} />
+              </label>
+            </div>
+          )}
           <button className="primary-btn" type="submit"><Ic e="✅" size={16} /> Thêm sản phẩm</button>
         </form>
       </div>

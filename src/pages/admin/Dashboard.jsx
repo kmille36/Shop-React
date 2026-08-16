@@ -1,6 +1,7 @@
 import { useAdmin } from '../../context/AdminContext'
 import { PAID_STATUSES } from '../../utils/orderStatus'
-import { formatPrice } from '../../utils/format'
+import { formatPrice, formatShort } from '../../utils/format'
+import { getFunnel } from '../../utils/track'
 import Ic from '../../components/Ic'
 import ProductImg from '../../components/ProductImg'
 
@@ -30,6 +31,20 @@ export default function Dashboard({ go }) {
   const avgOrder = paidOrders.length ? revenue / paidOrders.length : 0
   const lowStock = products.filter(p => (p.stock || 0) - (sold[p.id] || 0) <= 5)
 
+  // Revenue by month (last 6 months)
+  const months = []
+  const now = new Date()
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    const key = d.getFullYear() + '-' + d.getMonth()
+    const sum = paidOrders.filter(o => {
+      const od = new Date(o.date)
+      return od.getFullYear() + '-' + od.getMonth() === key
+    }).reduce((s2, o) => s2 + o.total, 0)
+    months.push({ label: d.toLocaleDateString('vi-VN', { month: 'short', year: '2-digit' }), sum })
+  }
+  const maxRev = Math.max(...months.map(m => m.sum), 1)
+
   const stats = [
     { icon: '💰', label: 'Doanh thu', value: formatPrice(revenue), sub: `${paidOrders.length} đơn đã TT` },
     { icon: '📦', label: 'Tổng đơn hàng', value: orders.length, sub: `${pending} chờ xử lý` },
@@ -50,6 +65,19 @@ export default function Dashboard({ go }) {
             </div>
           </div>
         ))}
+      </div>
+
+      <div className="glass panel">
+        <h3>📈 Doanh thu 6 tháng gần nhất</h3>
+        <div className="rev-chart">
+          {months.map((m, i) => (
+            <div key={i} className="rev-col" title={formatPrice(m.sum)}>
+              <span className="rev-val">{m.sum > 0 ? formatShort(m.sum) : ''}</span>
+              <div className="rev-bar"><span style={{ height: `${(m.sum / maxRev) * 100}%` }} /></div>
+              <small>{m.label}</small>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="admin-cols">
@@ -93,8 +121,33 @@ export default function Dashboard({ go }) {
         </div>
       </div>
 
-      <div className="glass panel">
-        <h3>🕘 Đơn hàng mới nhất</h3>
+      <div className="admin-cols">
+        <div className="glass panel">
+          <h3>🧮 Phễu bán hàng</h3>
+          {(() => {
+            const f = getFunnel()
+            const rate = f.views ? Math.round((f.orders / f.views) * 100) : 0
+            return (
+              <div className="funnel">
+                {[
+                  { label: 'Xem sản phẩm', val: f.views, pct: 100 },
+                  { label: 'Thêm vào giỏ', val: f.carts, pct: f.views ? Math.round(f.carts / f.views * 100) : 0 },
+                  { label: 'Đặt hàng', val: f.orders, pct: f.views ? Math.round(f.orders / f.views * 100) : 0 },
+                ].map((s, i) => (
+                  <div key={i} className="funnel-row">
+                    <span className="funnel-label">{s.label}</span>
+                    <div className="funnel-bar"><span style={{ width: s.pct + '%' }} /></div>
+                    <strong className="funnel-val">{s.val}</strong>
+                  </div>
+                ))}
+                <div className="funnel-rate"><Ic e="🎯" size={14} /> Tỷ lệ chuyển đổi: <strong>{rate}%</strong></div>
+              </div>
+            )
+          })()}
+        </div>
+
+        <div className="glass panel">
+          <h3>🕘 Đơn hàng mới nhất</h3>
         {orders.length === 0 ? <p className="panel-empty">Chưa có đơn hàng</p> : (
           <div className="mini-orders">
             {orders.slice(0, 5).map(o => (
@@ -110,6 +163,7 @@ export default function Dashboard({ go }) {
         <button className="ghost-btn small" style={{ marginTop: 12 }} onClick={() => go('orders')}>
           <Ic e="📦" size={14} /> Xem tất cả đơn hàng
         </button>
+        </div>
       </div>
     </div>
   )

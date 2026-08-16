@@ -3,10 +3,16 @@ import { ThemeProvider } from './context/ThemeContext'
 import { ToastProvider } from './context/ToastContext'
 import { AuthProvider } from './context/AuthContext'
 import { AdminProvider, useAdmin } from './context/AdminContext'
+import { CompareProvider } from './context/CompareContext'
+import { NotifyProvider } from './context/NotifyContext'
+import { LangProvider, useLang } from './utils/i18n'
 import AdminLogin from './pages/admin/AdminLogin'
 import AdminLayout from './pages/admin/AdminLayout'
 import { StoreProvider } from './context/StoreContext'
 import { CartProvider } from './context/CartContext'
+import { CompareBar, CompareModal } from './components/Compare'
+import FreeShippingBar from './components/FreeShippingBar'
+import SpinWheel from './components/SpinWheel'
 import Navbar from './components/Navbar'
 import ProductCard from './components/ProductCard'
 import ProductModal from './components/ProductModal'
@@ -19,25 +25,22 @@ import AuthPage from './pages/AuthPage'
 import WalletPage from './pages/WalletPage'
 import ProfilePage from './pages/ProfilePage'
 import WishlistPage from './pages/WishlistPage'
+import BlogPage from './pages/BlogPage'
+import ExitIntentPopup from './components/ExitIntentPopup'
+import { trackEvent } from './utils/track'
 import { categories } from './data/products'
 import { useStore } from './context/StoreContext'
 import { formatPrice } from './utils/format'
 import ProductImg from './components/ProductImg'
 import Ic from './components/Ic'
 
-const SORTS = [
-  { id: 'default', label: 'Mặc định' },
-  { id: 'price-asc', label: 'Giá tăng dần' },
-  { id: 'price-desc', label: 'Giá giảm dần' },
-  { id: 'rating', label: 'Đánh giá cao' },
-  { id: 'newest', label: 'Mới nhất' },
-]
+const SORTS = ['default', 'price-asc', 'price-desc', 'rating', 'newest']
 const PRICE_RANGES = [
-  { id: 'all', label: 'Mọi mức giá', min: 0, max: Infinity },
-  { id: 'lt5', label: 'Dưới 5 triệu', min: 0, max: 5000000 },
-  { id: '5-15', label: '5 - 15 triệu', min: 5000000, max: 15000000 },
-  { id: '15-30', label: '15 - 30 triệu', min: 15000000, max: 30000000 },
-  { id: 'gt30', label: 'Trên 30 triệu', min: 30000000, max: Infinity },
+  { id: 'all', min: 0, max: Infinity },
+  { id: 'lt5', min: 0, max: 5000000 },
+  { id: '5-15', min: 5000000, max: 15000000 },
+  { id: '15-30', min: 15000000, max: 30000000 },
+  { id: 'gt30', min: 30000000, max: Infinity },
 ]
 
 function RecentlyViewed({ onView }) {
@@ -66,22 +69,48 @@ function AdminGate({ children }) {
 }
 
 function Shop() {
+  const { t } = useLang()
   const [cartOpen, setCartOpen] = useState(false)
   const [checkoutOpen, setCheckoutOpen] = useState(false)
   const [authOpen, setAuthOpen] = useState(false)
   const [authMode, setAuthMode] = useState('login')
-  const [page, setPage] = useState(() => sessionStorage.getItem('shop_page') || 'home')
+  const [page, setPage] = useState(() => {
+    const h = window.location.hash.replace(/^#\/?/, '')
+    return h || sessionStorage.getItem('shop_page') || 'home'
+  })
   const [category, setCategory] = useState('Tất cả')
   const [search, setSearch] = useState('')
   const [sort, setSort] = useState('default')
   const [priceRange, setPriceRange] = useState('all')
   const [viewing, setViewing] = useState(null)
-  const { products } = useStore()
+  const [visible, setVisible] = useState(12) // pagination
+  const [viewMode, setViewMode] = useState(() => localStorage.getItem('shop_view') || 'grid') // grid | list
+  const [spinOpen, setSpinOpen] = useState(() => {
+    return localStorage.getItem('shop_spin_date') !== new Date().toDateString()
+  })
+  const { products, avgRating } = useStore()
 
+  // reset pagination when filters change
+  useEffect(() => { setVisible(12) }, [category, search, sort, priceRange])
+  useEffect(() => { localStorage.setItem('shop_view', viewMode) }, [viewMode])
+  // Hash routing: keep URL in sync (#/home, #/wishlist, ...) + back/forward support
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
     sessionStorage.setItem('shop_page', page)
+    const target = '#/' + page
+    if (window.location.hash !== target) {
+      history.pushState(null, '', target)
+    }
   }, [page])
+
+  useEffect(() => {
+    const onPop = () => {
+      const h = window.location.hash.replace(/^#\/?/, '')
+      if (h) setPage(h)
+    }
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [])
 
   const filtered = useMemo(() => {
     const range = PRICE_RANGES.find(r => r.id === priceRange)
@@ -93,12 +122,15 @@ function Shop() {
     })
     if (sort === 'price-asc') list = [...list].sort((a, b) => a.price - b.price)
     if (sort === 'price-desc') list = [...list].sort((a, b) => b.price - a.price)
-    if (sort === 'rating') list = [...list].sort((a, b) => b.rating - a.rating)
+    if (sort === 'rating') list = [...list].sort((a, b) => avgRating(b.id) - avgRating(a.id)) // FIX: khớp rating hiển thị
     if (sort === 'newest') list = [...list].sort((a, b) => b.id - a.id)
     return list
-  }, [category, search, sort, priceRange, products])
+  }, [category, search, sort, priceRange, products, avgRating])
 
   const openAuth = (mode = 'login') => { setAuthMode(mode); setAuthOpen(true) }
+
+  // funnel: track product views
+  const openProduct = (p) => { trackEvent('views'); setViewing(p) }
 
   return (
     <>
@@ -108,6 +140,7 @@ function Shop() {
           search={search} setSearch={setSearch}
           page={page} setPage={setPage}
           onRequireLogin={() => openAuth('login')}
+          onView={openProduct}
         />
       )}
 
@@ -115,12 +148,13 @@ function Shop() {
         <>
           <section className="hero">
             <div className="container">
-              <h1>Siêu thị Công nghệ <span>giá tốt nhất</span></h1>
-              <p>Miễn phí ship từ 10 triệu • Bảo hành 12 tháng • Đổi trả 7 ngày • <Ic e="🎁" size={14} className="inline-ic" /> Tặng 50K khi đăng ký</p>
+              <h1>{t('hero.title')} <span>{t('hero.title2')}</span></h1>
+              <p>{t('hero.sub').split('🎁')[0]}<Ic e="🎁" size={14} className="inline-ic" />{t('hero.sub').split('🎁')[1]}</p>
             </div>
           </section>
+          <FreeShippingBar />
 
-          <FlashSale onView={setViewing} />
+          <FlashSale onView={openProduct} />
 
           <main className="container">
             <div className="filters">
@@ -132,26 +166,39 @@ function Shop() {
             </div>
             <div className="filter-bar">
               <select className="glass select" value={sort} onChange={e => setSort(e.target.value)}>
-                {SORTS.map(s => <option key={s.id} value={s.id}>Sắp xếp: {s.label}</option>)}
+                {SORTS.map(id => <option key={id} value={id}>{t('sort.label')}: {t('sort.' + id)}</option>)}
               </select>
               <select className="glass select" value={priceRange} onChange={e => setPriceRange(e.target.value)}>
-                {PRICE_RANGES.map(r => <option key={r.id} value={r.id}>{r.label}</option>)}
+                {PRICE_RANGES.map(r => <option key={r.id} value={r.id}>{t('price.' + r.id)}</option>)}
               </select>
-              <span className="result-count">{filtered.length} sản phẩm</span>
+              <span className="result-count">{filtered.length} {t('products.count')}</span>
+              <div className="view-toggle">
+                <button className={viewMode === 'grid' ? 'active' : ''} onClick={() => setViewMode('grid')} title="Lưới"><Ic e="🔲" size={15} /></button>
+                <button className={viewMode === 'list' ? 'active' : ''} onClick={() => setViewMode('list')} title="Danh sách"><Ic e="📃" size={15} /></button>
+              </div>
             </div>
             {filtered.length === 0 ? (
-              <div className="no-result"><Ic e="😕" size={30} className="noresult-ic" /> Không tìm thấy sản phẩm phù hợp</div>
+              <div className="no-result"><Ic e="😕" size={30} className="noresult-ic" /> {t('products.none')}</div>
             ) : (
-              <div className="grid">
-                {filtered.map(p => <ProductCard key={p.id} product={p} onView={setViewing} />)}
-              </div>
+              <>
+                <div className={`grid ${viewMode === 'list' ? 'grid-list' : ''}`}>
+                  {filtered.slice(0, visible).map(p => <ProductCard key={p.id} product={p} onView={openProduct} />)}
+                </div>
+                {visible < filtered.length && (
+                  <div className="load-more">
+                    <button className="ghost-btn" onClick={() => setVisible(v => v + 12)}>
+                      <Ic e="⬇️" size={15} /> {t('products.more')} ({filtered.length - visible})
+                    </button>
+                  </div>
+                )}
+              </>
             )}
-            <RecentlyViewed onView={setViewing} />
+            <RecentlyViewed onView={openProduct} />
           </main>
         </>
       )}
 
-      {page === 'wishlist' && <WishlistPage onView={setViewing} />}
+      {page === 'wishlist' && <WishlistPage onView={openProduct} />}
       {page === 'admin' && (
         <AdminGate>
           {({ admin }) => admin
@@ -161,6 +208,7 @@ function Shop() {
       )}
       {page === 'wallet' && <WalletPage onRequireLogin={() => openAuth('login')} />}
       {page === 'profile' && <ProfilePage onRequireLogin={() => openAuth('login')} />}
+      {page === 'blog' && <BlogPage onBack={() => setPage('home')} onView={setViewing} />}
 
       {page !== 'admin' && <Footer onAdmin={() => setPage('admin')} />}
       {page !== 'admin' && <ChatBot />}
@@ -180,8 +228,13 @@ function Shop() {
           product={viewing}
           onClose={() => setViewing(null)}
           onRequireLogin={() => openAuth('login')}
+          onView={openProduct}
         />
       )}
+      <CompareBar />
+      <CompareModal />
+      {spinOpen && <SpinWheel onDismiss={() => setSpinOpen(false)} />}
+      <ExitIntentPopup onDismiss={() => {}} />
       {authOpen && (
         <AuthPage
           mode={authMode}
@@ -195,18 +248,24 @@ function Shop() {
 
 export default function App() {
   return (
-    <ThemeProvider>
-      <ToastProvider>
-        <AdminProvider>
-          <AuthProvider>
-            <StoreProvider>
-              <CartProvider>
-                <Shop />
-              </CartProvider>
-            </StoreProvider>
-          </AuthProvider>
-        </AdminProvider>
-      </ToastProvider>
-    </ThemeProvider>
+    <LangProvider>
+      <ThemeProvider>
+        <NotifyProvider>
+          <ToastProvider>
+            <AdminProvider>
+              <AuthProvider>
+                <CompareProvider>
+                  <StoreProvider>
+                    <CartProvider>
+                      <Shop />
+                    </CartProvider>
+                  </StoreProvider>
+                </CompareProvider>
+              </AuthProvider>
+            </AdminProvider>
+          </ToastProvider>
+        </NotifyProvider>
+      </ThemeProvider>
+    </LangProvider>
   )
 }

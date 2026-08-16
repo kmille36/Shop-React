@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { useToast } from '../context/ToastContext'
+import { useLang } from '../utils/i18n'
 import { formatPrice } from '../utils/format'
 import Ic from '../components/Ic'
 
@@ -11,20 +13,24 @@ const METHODS = [
 ]
 
 export default function WalletPage({ onRequireLogin }) {
-  const { user, topUp } = useAuth()
+  const { user, topUp, redeemGiftCard } = useAuth()
+  const { toast } = useToast()
+  const { t } = useLang()
   const [amount, setAmount] = useState(200000)
+  const [gcCode, setGcCode] = useState('')
   const [custom, setCustom] = useState('')
   const [method, setMethod] = useState('card')
   const [processing, setProcessing] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [lastTopUp, setLastTopUp] = useState(null) // FIX: giữ số tiền thực để toast không đổi khi custom bị clear
 
   if (!user) {
     return (
       <div className="page">
         <div className="glass empty-page">
           <div className="empty-icon"><Ic e="🔐" size={44} /></div>
-          <h2>Ví điện tử</h2>
-          <p>Vui lòng đăng nhập để sử dụng ví và nạp tiền</p>
+          <h2>{t('wallet.title')}</h2>
+          <p>{t('wallet.loginFirst')}</p>
           <button className="primary-btn" onClick={onRequireLogin}>Đăng nhập</button>
         </div>
       </div>
@@ -39,6 +45,7 @@ export default function WalletPage({ onRequireLogin }) {
     setProcessing(true)
     setTimeout(() => {
       topUp(finalAmount, methodObj.name)
+      setLastTopUp(finalAmount)
       setProcessing(false)
       setSuccess(true)
       setCustom('')
@@ -52,17 +59,17 @@ export default function WalletPage({ onRequireLogin }) {
       <div className="wallet-grid">
         {/* Balance card */}
         <div className="glass balance-card">
-          <div className="balance-label">Số dư ví</div>
+          <div className="balance-label">{t('wallet.balance')}</div>
           <div className="balance-amount">{formatPrice(user.balance)}</div>
           <div className="balance-hint"><Ic e="💡" size={14} className="inline-ic" /> Nạp từ 10.000đ • Dùng để thanh toán nhanh</div>
           {success && (
-            <div className="success-toast"><Ic e="✅" size={15} /> Nạp {formatPrice(finalAmount)} thành công!</div>
+            <div className="success-toast"><Ic e="✅" size={15} /> Nạp {formatPrice(lastTopUp || 0)} thành công!</div>
           )}
         </div>
 
         {/* TopUp form */}
         <div className="glass topup-card">
-          <h2><Ic e="💸" size={20} /> Nạp tiền vào ví</h2>
+          <h2><Ic e="💸" size={20} /> {t('wallet.topup')}</h2>
           <div className="preset-grid">
             {PRESETS.map(p => (
               <button
@@ -74,7 +81,7 @@ export default function WalletPage({ onRequireLogin }) {
               </button>
             ))}
           </div>
-          <label className="custom-label">Số tiền tùy chỉnh
+          <label className="custom-label">{t('wallet.custom')}
             <input
               type="number" min="10000" step="10000"
               placeholder="Nhập số tiền (tối thiểu 10.000đ)"
@@ -92,15 +99,30 @@ export default function WalletPage({ onRequireLogin }) {
             ))}
           </div>
           <button className="primary-btn topup-btn" onClick={doTopUp} disabled={processing || !finalAmount || finalAmount < 10000}>
-            {processing ? <span><Ic e="⏳" size={15} /> Đang xử lý...</span> : <span><Ic e="💸" size={16} /> Nạp {formatPrice(finalAmount || 0)}</span>}
+            {processing ? <span><Ic e="⏳" size={15} /> Đang xử lý...</span> : <span><Ic e="💸" size={16} /> {t('wallet.topupBtn')} {formatPrice(finalAmount || 0)}</span>}
           </button>
+
+          {/* Gift card redemption */}
+          <div className="giftcard-box">
+            <h3><Ic e="🎁" size={16} /> {t('wallet.giftcard')}</h3>
+            <div className="giftcard-row">
+              <input placeholder={t('wallet.giftcardPh')} value={gcCode}
+                onChange={e => setGcCode(e.target.value.toUpperCase())} />
+              <button className="ghost-btn" onClick={() => {
+                if (!gcCode.trim()) return
+                const res = redeemGiftCard(gcCode)
+                if (res.ok) { toast(res.msg); setGcCode('') }
+                else toast(res.msg, 'error')
+              }}>{t('wallet.giftcardBtn')}</button>
+            </div>
+          </div>
         </div>
 
         {/* Transactions */}
         <div className="glass tx-card">
-          <h2><Ic e="📊" size={20} /> Lịch sử giao dịch</h2>
+          <h2><Ic e="📊" size={20} /> {t('wallet.history')}</h2>
           {txs.length === 0 ? (
-            <p className="tx-empty">Chưa có giao dịch nào</p>
+            <p className="tx-empty">{t('wallet.empty')}</p>
           ) : (
             <div className="tx-list">
               {txs.map(t => (

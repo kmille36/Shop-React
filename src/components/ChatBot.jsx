@@ -7,7 +7,7 @@ const BOT_RULES = [
   { keys: ['giá', 'bao nhiêu', 'giá bao nhiêu'], reply: '💰 Giá các sản phẩm từ 3.990.000đ (Kindle) đến 42.990.000đ (MacBook Pro 14). Bạn xem danh mục để chọn nhé!' },
   { keys: ['ship', 'giao', 'vận chuyển', 'phí ship'], reply: '🚚 Phí ship 30.000đ, MIỄN PHÍ cho đơn từ 10 triệu hoặc dùng mã FREESHIP. Giao 1-3 ngày toàn quốc!' },
   { keys: ['mã', 'giảm giá', 'khuyến mãi', 'voucher', 'coupon'], reply: '🎟️ Có 4 mã giảm giá đang áp dụng:\n• GIAM10: giảm 10% (tối đa 500K)\n• SAVE50: giảm 50K (đơn từ 1tr)\n• VIP20: giảm 20% (đơn từ 5tr)\n• FREESHIP: miễn phí ship' },
-  { keys: ['điểm', 'tích điểm', 'loyalty'], reply: '🎁 Mỗi 10.000đ bạn mua sẽ tích 1 điểm. 100 điểm = 10.000đ, dùng khi thanh toán! Đăng ký mới tặng 100 điểm + 50K vào ví.' },
+  { keys: ['điểm', 'tích điểm', 'loyalty'], reply: '🎁 Mỗi 10.000đ bạn mua sẽ tích 1 điểm. 1000 điểm = 10.000đ, dùng khi thanh toán! Đăng ký mới tặng 100 điểm + 50K vào ví.' },
   { keys: ['đổi', 'trả', 'bảo hành'], reply: '🔄 Đổi trả miễn phí trong 7 ngày nếu lỗi do nhà sản xuất. Bảo hành chính hãng 12 tháng, 1 đổi 1 trong 30 ngày đầu.' },
   { keys: ['nạp', 'ví', 'số dư'], reply: '👛 Vào menu "Ví" để nạp tiền (từ 10.000đ) qua thẻ ATM, chuyển khoản hoặc ví điện tử. Nạp xong dùng để thanh toán nhanh!' },
   { keys: ['điện thoại', 'iphone', 'samsung', 'galaxy'], reply: '📱 Chúng tôi có iPhone 15/15 Pro Max, Galaxy S24 Ultra, iPhone 15. Xem danh mục "Điện thoại" nhé!' },

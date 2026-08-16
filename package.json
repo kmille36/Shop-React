@@ -10,11 +10,13 @@
   },
   "dependencies": {
     "lucide-react": "^1.31.0",
+    "qrcode": "^1.5.4",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^6.0.5",
+    "puppeteer": "^24.43.1",
     "vite": "^8.2.1"
   }
 }

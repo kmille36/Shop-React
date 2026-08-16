@@ -32,11 +32,13 @@ export function StoreProvider({ children }) {
   const [reviews, setReviews] = useState(() => load('shop_reviews', seedReviews))
   const [recentlyViewed, setRecentlyViewed] = useState(() => load('shop_recent', []))
   const [sold, setSold] = useState(() => load('shop_sold', {}))
+  const [qa, setQA] = useState(() => load('shop_qa', {}))
 
   useEffect(() => localStorage.setItem('shop_wishlist', JSON.stringify(wishlist)), [wishlist])
   useEffect(() => localStorage.setItem('shop_reviews', JSON.stringify(reviews)), [reviews])
   useEffect(() => localStorage.setItem('shop_recent', JSON.stringify(recentlyViewed)), [recentlyViewed])
   useEffect(() => localStorage.setItem('shop_sold', JSON.stringify(sold)), [sold])
+  useEffect(() => localStorage.setItem('shop_qa', JSON.stringify(qa)), [qa])
 
   const toggleWishlist = (id) =>
     setWishlist(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
@@ -62,11 +64,34 @@ export function StoreProvider({ children }) {
     return Math.round((list.reduce((s, r) => s + r.rating, 0) / list.length) * 10) / 10
   }
 
+  // Q&A
+  const addQA = (productId, item) =>
+    setQA(prev => ({ ...prev, [productId]: [item, ...(prev[productId] || [])] }))
+  const answerQA = (productId, qaId, answer) =>
+    setQA(prev => ({
+      ...prev,
+      [productId]: (prev[productId] || []).map(x => x.id === qaId ? { ...x, a: answer } : x),
+    }))
+
+  // Price / stock alerts (persisted to localStorage; admin manages them)
+  const addPriceAlert = (alert) => {
+    const list = load('shop_price_alerts', [])
+    list.unshift(alert)
+    localStorage.setItem('shop_price_alerts', JSON.stringify(list))
+  }
+  const addStockAlert = (alert) => {
+    const list = load('shop_stock_alerts', [])
+    list.unshift(alert)
+    localStorage.setItem('shop_stock_alerts', JSON.stringify(list))
+  }
+
   return (
     <StoreContext.Provider value={{
       products,
       wishlist, toggleWishlist, reviews, addReview,
-      recentlyViewed, viewProduct, getStock, decrementStock, avgRating
+      recentlyViewed, viewProduct, getStock, decrementStock, avgRating,
+      qa, addQA, answerQA,
+      addPriceAlert, addStockAlert
     }}>
       {children}
     </StoreContext.Provider>

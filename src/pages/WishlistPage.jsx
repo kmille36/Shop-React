@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useStore } from '../context/StoreContext'
 import { useCart } from '../context/CartContext'
 import { useToast } from '../context/ToastContext'
+import { useLang } from '../utils/i18n'
 import { formatPrice } from '../utils/format'
 import ProductImg from '../components/ProductImg'
 import Ic from '../components/Ic'
@@ -10,15 +11,16 @@ export default function WishlistPage({ onView }) {
   const { wishlist, toggleWishlist, getStock, products } = useStore()
   const { addToCart, cart } = useCart()
   const { toast } = useToast()
+  const { t } = useLang()
   const [moved, setMoved] = useState([])
 
   const items = products.filter(p => wishlist.includes(p.id))
 
   const moveToCart = (p) => {
     const stock = getStock(p)
-    if (stock <= 0) return toast('Sản phẩm đã hết hàng!', 'error')
+    if (stock <= 0) return toast(t('toast.out'), 'error')
     const inCart = cart.find(i => i.id === p.id)?.qty || 0
-    if (inCart >= stock) return toast(`Chỉ còn ${stock} sản phẩm!`, 'error')
+    if (inCart >= stock) return toast(`${t('toast.stockOnly')} ${stock} ${t('toast.sp')}`, 'error')
     addToCart(p)
     toggleWishlist(p.id)
     setMoved(prev => [...prev, p.id])
@@ -27,11 +29,11 @@ export default function WishlistPage({ onView }) {
 
   return (
     <div className="page">
-      <h1 className="page-title"><Ic e="❤️" size={24} className="inline-ic" /> Sản phẩm yêu thích ({items.length})</h1>
+      <h1 className="page-title"><Ic e="❤️" size={24} className="inline-ic" /> {t('wish.title')} ({items.length})</h1>
       {items.length === 0 ? (
         <div className="glass empty-page">
           <div className="empty-icon"><Ic e="💔" size={44} /></div>
-          <h2>Chưa có sản phẩm nào</h2>
+          <h2>{t('wish.empty')}</h2>
           <p>Nhấn vào <Ic e="🤍" size={15} className="inline-ic" /> trên sản phẩm để lưu vào đây</p>
         </div>
       ) : (

@@ -1,9 +1,14 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { useCart } from '../context/CartContext'
+import { useStore } from '../context/StoreContext'
 import { useToast } from '../context/ToastContext'
+import { useLang } from '../utils/i18n'
 import { formatPrice } from '../utils/format'
 import ProductImg from '../components/ProductImg'
 import Ic from '../components/Ic'
+import CheckinCard from '../components/CheckinCard'
+import Badges from '../components/Badges'
 
 const STEPS = [
   { key: 'placed', icon: '📝', label: 'Đặt hàng' },
@@ -78,8 +83,16 @@ function TrackModal({ order, onClose }) {
 }
 
 export default function ProfilePage({ onRequireLogin }) {
-  const { user, updateProfile, logout, cancelOrder } = useAuth()
+  const { user, updateProfile, logout, cancelOrder, requestReturn, refreshUser } = useAuth()
+  const { addToCart, cart } = useCart()
+  const { getStock, products } = useStore()
   const { toast } = useToast()
+  const { t } = useLang()
+  const [returnFor, setReturnFor] = useState(null)
+  const [returnReason, setReturnReason] = useState('')
+
+  // Pull latest data (order statuses, refunds) that admin may have changed
+  useEffect(() => { refreshUser() }, [])
   const [tab, setTab] = useState('info')
   const [editing, setEditing] = useState(false)
   const [form, setForm] = useState({ name: '', phone: '' })
@@ -91,8 +104,8 @@ export default function ProfilePage({ onRequireLogin }) {
       <div className="page">
         <div className="glass empty-page">
           <div className="empty-icon"><Ic e="👤" size={44} /></div>
-          <h2>Hồ sơ của tôi</h2>
-          <p>Vui lòng đăng nhập để xem thông tin cá nhân</p>
+          <h2>{t('profile.title')}</h2>
+          <p>{t('profile.loginFirst')}</p>
           <button className="primary-btn" onClick={onRequireLogin}>Đăng nhập</button>
         </div>
       </div>
@@ -112,7 +125,15 @@ export default function ProfilePage({ onRequireLogin }) {
   }
 
   const totalSpent = user.orders.reduce((s, o) => s + o.total, 0)
-  const rank = user.points >= 2000 ? '💎 VIP Diamond' : user.points >= 500 ? '🥇 Gold' : user.points >= 100 ? '🥈 Silver' : '🥉 Bronze'
+  const RANKS = [
+    { name: '🥉 Bronze', min: 0 }, { name: '🥈 Silver', min: 100 },
+    { name: '🥇 Gold', min: 500 }, { name: '💎 VIP Diamond', min: 2000 },
+  ]
+  const rank = RANKS.filter(r => (user.points || 0) >= r.min).pop().name
+  const nextRank = RANKS.find(r => (user.points || 0) < r.min)
+  const rankPct = nextRank
+    ? Math.round(((user.points || 0) - RANKS.filter(r => (user.points || 0) >= r.min).pop().min) / (nextRank.min - RANKS.filter(r => (user.points || 0) >= r.min).pop().min) * 100)
+    : 100
 
   return (
     <div className="page">
@@ -122,6 +143,12 @@ export default function ProfilePage({ onRequireLogin }) {
           <h2>{user.name}</h2>
           <p className="profile-email">{user.email}</p>
           <div className="member-rank"><Ic e={rank.split(" ")[0]} size={16} className="inline-ic" /> {rank.split(" ").slice(1).join(" ")}</div>
+          {nextRank && (
+            <div className="rank-progress">
+              <div className="rank-bar"><span style={{ width: rankPct + '%' }} /></div>
+              <small>{t('profile.nextRank')} <strong>{nextRank.min - (user.points || 0)}</strong> {t('profile.nextRank2')} {nextRank.name.split(' ').slice(1).join(' ')}</small>
+            </div>
+          )}
           <div className="profile-stats">
             <div className="stat"><strong>{user.orders.length}</strong><span>Đơn hàng</span></div>
             <div className="stat"><strong>{formatPrice(user.balance)}</strong><span>Số dư ví</span></div>
@@ -130,13 +157,15 @@ export default function ProfilePage({ onRequireLogin }) {
           <div className="points-hint">
             <Ic e="🎁" size={14} className="inline-ic" /> Còn <strong>{user.points || 0}</strong> điểm = {formatPrice(Math.floor((user.points || 0) / 1000) * 10000)}
           </div>
-          <button className="ghost-btn" onClick={() => { logout(); toast('Đã đăng xuất', 'info') }}><Ic e="🚪" size={15} /> Đăng xuất</button>
+          <CheckinCard />
+          <Badges />
+          <button className="ghost-btn" onClick={() => { logout(); toast(t('profile.logout'), 'info') }}><Ic e="🚪" size={15} /> {t('nav.login') === 'Đăng nhập' ? 'Đăng xuất' : 'Sign out'}</button>
         </div>
 
         <div className="glass profile-detail">
           <div className="tabs">
-            <button className={`tab ${tab === 'info' ? 'active' : ''}`} onClick={() => setTab('info')}><Ic e="👤" size={15} /> Thông tin</button>
-            <button className={`tab ${tab === 'orders' ? 'active' : ''}`} onClick={() => setTab('orders')}><Ic e="📦" size={15} /> Đơn hàng ({user.orders.length})</button>
+            <button className={`tab ${tab === 'info' ? 'active' : ''}`} onClick={() => setTab('info')}><Ic e="👤" size={15} /> {t('profile.info')}</button>
+            <button className={`tab ${tab === 'orders' ? 'active' : ''}`} onClick={() => setTab('orders')}><Ic e="📦" size={15} /> {t('profile.orders')} ({user.orders.length})</button>
           </div>
 
           {tab === 'info' && (
@@ -153,8 +182,8 @@ export default function ProfilePage({ onRequireLogin }) {
                     <input value={user.email} disabled />
                   </label>
                   <div className="btn-row">
-                    <button className="primary-btn" type="submit"><Ic e="💾" size={15} /> Lưu</button>
-                    <button type="button" className="ghost-btn" onClick={() => setEditing(false)}>Hủy</button>
+                    <button className="primary-btn" type="submit"><Ic e="💾" size={15} /> {t('profile.save')}</button>
+                    <button type="button" className="ghost-btn" onClick={() => setEditing(false)}>{t('profile.cancel')}</button>
                   </div>
                 </form>
               ) : (
@@ -162,10 +191,23 @@ export default function ProfilePage({ onRequireLogin }) {
                   <div className="info-row"><span>Họ tên</span><strong>{user.name}</strong></div>
                   <div className="info-row"><span>Email</span><strong>{user.email}</strong></div>
                   <div className="info-row"><span>Điện thoại</span><strong>{user.phone || '—'}</strong></div>
-                  <div className="info-row"><span>Hạng thành viên</span><strong>{rank}</strong></div>
-                  <div className="info-row"><span>Tổng đã chi</span><strong>{formatPrice(totalSpent)}</strong></div>
-                  <div className="info-row"><span>Thành viên từ</span><strong>{new Date(user.createdAt).toLocaleDateString('vi-VN')}</strong></div>
-                  <button className="primary-btn" onClick={startEdit}><Ic e="✏️" size={15} /> Chỉnh sửa thông tin</button>
+                  <div className="info-row"><span>{t('profile.rank')}</span><strong>{rank}</strong></div>
+                  <div className="info-row"><span>{t('profile.spent')}</span><strong>{formatPrice(totalSpent)}</strong></div>
+                  <div className="info-row"><span>{t('profile.member')}</span><strong>{new Date(user.createdAt).toLocaleDateString('vi-VN')}</strong></div>
+                  <div className="referral-box">
+                    <div>
+                      <strong>{t('profile.referral')}</strong>
+                      <small>{t('profile.referralHint')}</small>
+                    </div>
+                    <div className="referral-code-row">
+                      <code>{user.referralCode}</code>
+                      <button className="ghost-btn small" onClick={() => {
+                        navigator.clipboard?.writeText(user.referralCode)
+                        toast(t('profile.copied'))
+                      }}><Ic e="📋" size={13} /> {t('profile.copy')}</button>
+                    </div>
+                  </div>
+                  <button className="primary-btn" onClick={startEdit}><Ic e="✏️" size={15} /> {t('profile.edit')}</button>
                 </>
               )}
             </div>
@@ -183,7 +225,12 @@ export default function ProfilePage({ onRequireLogin }) {
                         <strong>Đơn #</strong>
                         <span className="order-id">{o.id.slice(-6).toUpperCase()}</span>
                         <span className={`order-status ${o.status}`}>
-                          {o.status === 'paid' ? <span><Ic e='✅' size={13} /> Đã thanh toán</span> : o.status === 'cancelled' ? <span><Ic e='🚫' size={13} /> Đã hủy</span> : <span><Ic e='💳' size={13} /> Chờ nhận</span>}
+                          {o.status === 'paid' ? <span><Ic e='✅' size={13} /> Đã thanh toán</span>
+                            : o.status === 'processing' ? <span><Ic e='⚙️' size={13} /> Đang xử lý</span>
+                            : o.status === 'shipped' ? <span><Ic e='🚚' size={13} /> Đang giao</span>
+                            : o.status === 'delivered' ? <span><Ic e='📦' size={13} /> Đã giao</span>
+                            : o.status === 'cancelled' ? <span><Ic e='🚫' size={13} /> Đã hủy</span>
+                            : <span><Ic e='💳' size={13} /> Chờ nhận</span>}
                         </span>
                       </div>
                       <div className="order-items">
@@ -194,6 +241,26 @@ export default function ProfilePage({ onRequireLogin }) {
                         <div className="order-actions">
                           {o.status === 'cod' && (
                             <button className="ghost-btn small" onClick={() => { cancelOrder(o.id); toast('Đã hủy đơn hàng', 'info') }}>Hủy đơn</button>
+                          )}
+                          <button className="ghost-btn small" onClick={() => {
+                            // buy again: re-add items, resolving current price/stock from the live catalog
+                            let added = 0
+                            o.items.forEach(i => {
+                              const live = products.find(p => p.id === i.id)
+                              const p = live || { id: i.id, name: i.name, image: i.image, price: i.price, category: 'Phụ kiện', stock: 99 }
+                              const stock = live ? getStock(live) : 99
+                              const inCart = cart.find(c => c.id === i.id)?.qty || 0
+                              if (stock > inCart) { addToCart(p, Math.min(i.qty, stock - inCart)); added++ }
+                            })
+                            toast(added ? t('buyAgainToast') : t('toast.out'), added ? 'success' : 'error')
+                          }}><Ic e="🔄" size={14} /> {t('buyAgain')}</button>
+                          {(o.status === 'delivered' || o.status === 'shipped') && !o.return && (
+                            <button className="ghost-btn small" onClick={() => { setReturnFor(o); setReturnReason('') }}><Ic e="↩️" size={14} /> {t('return.title')}</button>
+                          )}
+                          {o.return && (
+                            <span className={`return-tag ${o.return.status}`}>
+                              {o.return.status === 'pending' ? '⏳ ' + t('return.pending') : o.return.status === 'approved' ? '✅ ' + t('return.approved') : '🚫 ' + t('return.rejected')}
+                            </span>
                           )}
                           <button className="primary-btn small" onClick={() => setTracking(o)}><Ic e="📍" size={14} /> Theo dõi</button>
                         </div>
@@ -207,6 +274,28 @@ export default function ProfilePage({ onRequireLogin }) {
         </div>
       </div>
       {tracking && <TrackModal order={tracking} onClose={() => setTracking(null)} />}
+      {returnFor && (
+        <div className="modal-overlay" onClick={() => setReturnFor(null)}>
+          <div className="glass modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-head">
+              <h2><Ic e="↩️" size={18} /> {t('return.title')} — #{returnFor.id.slice(-6).toUpperCase()}</h2>
+              <button className="close-btn" onClick={() => setReturnFor(null)}><Ic e="✕" size={18} /></button>
+            </div>
+            <p className="muted" style={{ marginBottom: 12 }}>{t('return.refund')}: {formatPrice(returnFor.total)}</p>
+            <div className="auth-form">
+              <label>{t('return.reason')}
+                <textarea rows="3" value={returnReason} onChange={e => setReturnReason(e.target.value)} placeholder={t('return.reasonPh')} />
+              </label>
+              <button className="primary-btn" onClick={() => {
+                if (!returnReason.trim()) return toast(t('return.reasonPh'), 'error')
+                requestReturn(returnFor.id, returnReason.trim())
+                setReturnFor(null)
+                toast('Đã gửi yêu cầu đổi trả! ⏳')
+              }}><Ic e="✅" size={15} /> {t('return.submit')}</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

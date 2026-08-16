@@ -7,6 +7,11 @@ import OrdersAdmin from './OrdersAdmin'
 import ProductsAdmin from './ProductsAdmin'
 import UsersAdmin from './UsersAdmin'
 import CouponsAdmin from './CouponsAdmin'
+import GiftCardsAdmin from './GiftCardsAdmin'
+import AlertsAdmin from './AlertsAdmin'
+import ReturnsAdmin from './ReturnsAdmin'
+import BlogAdmin from './BlogAdmin'
+import ActivityAdmin from './ActivityAdmin'
 import SettingsAdmin from './SettingsAdmin'
 
 const NAV = [
@@ -15,6 +20,11 @@ const NAV = [
   { id: 'products', icon: '📱', label: 'Sản phẩm' },
   { id: 'users', icon: '👥', label: 'Khách hàng' },
   { id: 'coupons', icon: '🎟️', label: 'Mã giảm giá' },
+  { id: 'giftcards', icon: '🎁', label: 'Thẻ quà tặng' },
+  { id: 'alerts', icon: '🔔', label: 'Báo giá/hàng' },
+  { id: 'returns', icon: '↩️', label: 'Đổi trả' },
+  { id: 'blog', icon: '📰', label: 'Tin tức' },
+  { id: 'activity', icon: '📈', label: 'Hoạt động' },
   { id: 'settings', icon: '⚙️', label: 'Cài đặt' },
 ]
 
@@ -64,6 +74,11 @@ export default function AdminLayout({ onBack }) {
         {tab === 'products' && <ProductsAdmin />}
         {tab === 'users' && <UsersAdmin />}
         {tab === 'coupons' && <CouponsAdmin />}
+        {tab === 'giftcards' && <GiftCardsAdmin />}
+        {tab === 'alerts' && <AlertsAdmin />}
+        {tab === 'returns' && <ReturnsAdmin />}
+        {tab === 'blog' && <BlogAdmin />}
+        {tab === 'activity' && <ActivityAdmin />}
         {tab === 'settings' && <SettingsAdmin />}
       </main>
     </div>
