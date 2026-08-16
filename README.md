@@ -57,6 +57,7 @@ Website bán hàng công nghệ hoàn chỉnh với **khu vực Quản trị (Ad
 ### 👛 Ví điện tử
 - Nạp tiền (preset 100K–5M hoặc tùy chỉnh, 3 phương thức)
 - **💸 2 chế độ nạp**: ⚡ **Nạp tự động** (vào ví ngay) hoặc 📨 **Gửi yêu cầu** (chờ admin duyệt — khách thấy trạng thái Chờ duyệt/Đã duyệt/Bị từ chối, nhận thông báo khi admin duyệt)
+- Admin **bật/tắt chế độ** ở Cài đặt: chỉ tự động / chỉ chờ duyệt / cả hai — khách chỉ thấy chế độ được phép
 - Lịch sử giao dịch
 - **🃏 Đổi thẻ quà tặng** (admin phát mã `GC-XXXXXX`)
 - Thanh toán nhanh bằng ví khi checkout
@@ -140,6 +141,7 @@ Truy cập: link **"🛡️ Quản trị"** ở cuối trang (footer).
 - Log **60 sự kiện gần nhất**: đăng ký, đặt hàng, đổi trạng thái, sản phẩm, khách, mã, thẻ quà, giới thiệu, đổi trả, blog...
 
 ### ⚙️ Cài đặt
+- **💸 Bật/tắt chế độ nạp tiền**: chỉ tự động / chỉ chờ duyệt / cả hai
 - Đổi mật khẩu quản trị
 - ⚠️ Reset toàn bộ dữ liệu cửa hàng
 
