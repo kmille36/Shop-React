@@ -1,4 +1,4 @@
-# 🛍️ ShopReact — Website E-commerce React (v3)
+# 🛍️ ShopReact — Website E-commerce React (v2)
 
 Website bán hàng công nghệ hoàn chỉnh với **khu vực Quản trị (Admin Panel 10 tab)**, build với **React 19 + Vite 8**, giao diện **Liquid Glass** (kính mờ, gradient động). 100% client-side, dữ liệu lưu `localStorage` — không cần backend.
 
