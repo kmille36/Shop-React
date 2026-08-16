@@ -1218,6 +1218,17 @@ html.dark .review-stars button.on { color: #fdcb6e; }
 /* Layout */
 .admin-wrap { display: flex; min-height: 100vh; gap: 18px; padding: 18px; max-width: 1400px; margin: 0 auto; }
 .admin-side { width: 250px; flex-shrink: 0; display: flex; flex-direction: column; padding: 20px 14px; position: sticky; top: 18px; align-self: flex-start; max-height: calc(100vh - 36px); }
+/* nav is the scrollable region so brand + footer stay visible with 13 tabs */
+.admin-nav { flex: 1; min-height: 0; overflow-y: auto; padding-right: 4px; margin-right: -4px; }
+.admin-nav::-webkit-scrollbar { width: 5px; }
+.admin-nav::-webkit-scrollbar-thumb { background: rgba(0,0,0,.15); border-radius: 3px; }
+html.dark .admin-nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,.2); }
+.topup-mode-note {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 14px;
+  font-size: .82rem; font-weight: 600; color: var(--primary);
+  background: rgba(108,92,231,.08); border: 1px dashed var(--primary);
+  border-radius: 12px; padding: 10px 12px;
+}
 .admin-brand { display: flex; align-items: center; gap: 10px; padding: 6px 10px 18px; border-bottom: 1px solid rgba(0,0,0,.08); margin-bottom: 14px; }
 html.dark .admin-brand { border-bottom-color: rgba(255,255,255,.12); }
 .admin-brand-ic { width: 40px; height: 40px; border-radius: 12px; background: linear-gradient(135deg, var(--primary), var(--pink)); color: #fff; display: flex; align-items: center; justify-content: center; }

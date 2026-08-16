@@ -24,8 +24,20 @@ export default function WalletPage({ onRequireLogin }) {
   const [processing, setProcessing] = useState(false)
   const [success, setSuccess] = useState(false)
   const [lastTopUp, setLastTopUp] = useState(null) // FIX: giữ số tiền thực để toast không đổi khi custom bị clear
+  const [adminMode, setAdminMode] = useState('both') // what admin allows: auto | request | both
   const [mode, setMode] = useState('auto') // 'auto' = instant, 'request' = chờ admin duyệt
-  const { getTopupRequests, createTopupRequest } = useAdmin()
+  const { getTopupRequests, createTopupRequest, getTopupMode } = useAdmin()
+  // admin can restrict which top-up mode(s) customers may use
+  useEffect(() => {
+    setAdminMode(getTopupMode())
+    const t = setInterval(() => setAdminMode(getTopupMode()), 2000)
+    return () => clearInterval(t)
+  }, [])
+  useEffect(() => {
+    // if admin disabled the currently-selected mode, switch to an allowed one
+    if (adminMode === 'auto' && mode !== 'auto') setMode('auto')
+    if (adminMode === 'request' && mode !== 'request') setMode('request')
+  }, [adminMode])
   const [requests, setRequests] = useState([])
   // refresh pending requests (admin may approve them in another tab)
   useEffect(() => {
@@ -89,16 +101,24 @@ export default function WalletPage({ onRequireLogin }) {
         {/* TopUp form */}
         <div className="glass topup-card">
           <h2><Ic e="💸" size={20} /> {t('wallet.topup')}</h2>
-          <div className="topup-mode">
-            <label className={`topup-mode-opt ${mode === 'auto' ? 'active' : ''}`}>
-              <input type="radio" name="topupmode" checked={mode === 'auto'} onChange={() => setMode('auto')} />
-              <span><Ic e="⚡" size={14} /> Nạp tự động</span>
-            </label>
-            <label className={`topup-mode-opt ${mode === 'request' ? 'active' : ''}`}>
-              <input type="radio" name="topupmode" checked={mode === 'request'} onChange={() => setMode('request')} />
-              <span><Ic e="📨" size={14} /> Gửi yêu cầu (chờ duyệt)</span>
-            </label>
-          </div>
+          {adminMode === 'both' && (
+            <div className="topup-mode">
+              <label className={`topup-mode-opt ${mode === 'auto' ? 'active' : ''}`}>
+                <input type="radio" name="topupmode" checked={mode === 'auto'} onChange={() => setMode('auto')} />
+                <span><Ic e="⚡" size={14} /> Nạp tự động</span>
+              </label>
+              <label className={`topup-mode-opt ${mode === 'request' ? 'active' : ''}`}>
+                <input type="radio" name="topupmode" checked={mode === 'request'} onChange={() => setMode('request')} />
+                <span><Ic e="📨" size={14} /> Gửi yêu cầu (chờ duyệt)</span>
+              </label>
+            </div>
+          )}
+          {adminMode !== 'both' && (
+            <div className="topup-mode-note">
+              <Ic e={adminMode === 'auto' ? '⚡' : '📨'} size={14} />
+              {adminMode === 'auto' ? 'Shop đang bật chế độ nạp tự động — tiền vào ví ngay.' : 'Shop đang yêu cầu duyệt nạp tiền — yêu cầu của bạn sẽ được admin xử lý.'}
+            </div>
+          )}
           <div className="preset-grid">
             {PRESETS.map(p => (
               <button

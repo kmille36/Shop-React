@@ -235,6 +235,15 @@ export function AdminProvider({ children }) {
     bump()
   }
 
+  // ===== Top-up mode setting: 'auto' | 'request' | 'both' =====
+  const getTopupMode = () => load('shop_topup_mode', 'both')
+  const setTopupMode = (mode) => {
+    // store JSON-serialized so the JSON-based load() can read it back
+    save('shop_topup_mode', JSON.stringify(mode))
+    logActivity('settings', `Chế độ nạp tiền: ${mode === 'auto' ? 'chỉ tự động' : mode === 'request' ? 'chỉ chờ duyệt' : 'cả hai'}`)
+    bump()
+  }
+
   // ===== Top-up requests (user requests a top-up, admin approves/rejects) =====
   const getTopupRequests = () => load('shop_topup_requests', [])
   const createTopupRequest = (email, name, amount, method) => {
@@ -322,6 +331,7 @@ export function AdminProvider({ children }) {
       getPriceAlerts, getStockAlerts, markAlertDone,
       getReturns, setReturnStatus,
       getBlog, addBlogPost, deleteBlogPost,
+      getTopupMode, setTopupMode,
       getTopupRequests, createTopupRequest, approveTopupRequest, rejectTopupRequest,
       importProducts,
     }}>
