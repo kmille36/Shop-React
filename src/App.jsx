@@ -223,6 +223,7 @@ function Shop() {
         open={checkoutOpen}
         onClose={() => setCheckoutOpen(false)}
         onRequireLogin={() => openAuth('login')}
+        onGoProfile={() => setPage('profile')}
       />
       {viewing && (
         <ProductModal

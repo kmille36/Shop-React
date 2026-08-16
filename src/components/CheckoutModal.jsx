@@ -8,7 +8,7 @@ import { formatPrice } from '../utils/format'
 import Ic from './Ic'
 import QRModal from './QRModal'
 
-export default function CheckoutModal({ open, onClose, onRequireLogin }) {
+export default function CheckoutModal({ open, onClose, onRequireLogin, onGoProfile }) {
   const { cart, subtotal, discount, qtyDiscount, comboDiscount, shipping, giftFee, total, clearCart, giftWrap } = useCart()
   const { user, payWithWallet, addOrder, saveAddress } = useAuth()
   const { decrementStock } = useStore()
@@ -119,13 +119,20 @@ export default function CheckoutModal({ open, onClose, onRequireLogin }) {
               {summary.payMethod === 'cod' && <>Bạn sẽ thanh toán {formatPrice(summary.finalTotal)} khi nhận hàng.</>}
               {summary.pointsUsed > 0 && <><br /><Ic e="🎁" size={14} className="inline-ic" /> Đã dùng {summary.pointsUsed} điểm (−{formatPrice(summary.redeemValue)})</>}
             </p>
-            <button className="primary-btn" onClick={close}>{t('checkout.ok')}</button>
+            <div className="success-actions">
+              {user && onGoProfile && (
+                <button className="ghost-btn" onClick={() => { close(); onGoProfile() }}>
+                  <Ic e="📍" size={15} /> {t('checkout.trackOrder')}
+                </button>
+              )}
+              <button className="primary-btn" onClick={close}>{t('checkout.ok')}</button>
+            </div>
           </div>
         ) : (
           <>
             <div className="modal-head">
               <h2><Ic e="💳" size={20} /> {t('checkout.title')}</h2>
-              <button className="close-btn" onClick={close}><Ic e="✕" size={18} /></button>
+              <button className="close-btn" onClick={close} aria-label="Đóng"><Ic e="✕" size={18} /></button>
             </div>
             {cart.length === 0 ? (
               <div className="empty" style={{ padding: '30px 0' }}>
@@ -223,6 +230,7 @@ export default function CheckoutModal({ open, onClose, onRequireLogin }) {
                   <div className="sum-row total"><span>{t('checkout.payTotal')}</span><strong>{formatPrice(finalTotal)}</strong></div>
                 </div>
                 <button className="primary-btn" type="submit"><Ic e="✅" size={16} /> {t('checkout.confirm')}</button>
+                <p className="checkout-trust"><Ic e="🔒" size={13} /> {t('checkout.trust')}</p>
               </form>
             )}
           </>

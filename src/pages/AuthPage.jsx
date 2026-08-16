@@ -15,13 +15,13 @@ export default function AuthPage({ mode, onClose, onSwitch }) {
 
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value })
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault()
     setError('')
     if (mode === 'register' && !captchaOk) return setError('Trả lời câu hỏi chống spam chưa đúng!')
     const res = mode === 'login'
-      ? login(form.email, form.password)
-      : register(form)
+      ? await login(form.email, form.password)
+      : await register(form)
     if (!res.ok) return setError(res.msg)
     toast(res.msg)
     onClose()
@@ -32,7 +32,7 @@ export default function AuthPage({ mode, onClose, onSwitch }) {
       <div className="glass modal" onClick={e => e.stopPropagation()}>
         <div className="modal-head">
           <h2><Ic e={mode === 'login' ? '🔐' : '✨'} size={20} /> {mode === 'login' ? t('auth.login') : t('auth.register')}</h2>
-          <button className="close-btn" onClick={onClose}><Ic e="✕" size={18} /></button>
+          <button className="close-btn" onClick={onClose} aria-label="Đóng"><Ic e="✕" size={18} /></button>
         </div>
         <form onSubmit={submit} className="auth-form">
           {mode === 'register' && (

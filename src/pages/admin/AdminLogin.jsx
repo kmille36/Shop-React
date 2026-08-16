@@ -10,9 +10,9 @@ export default function AdminLogin({ onBack }) {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault()
-    const res = login(email, password)
+    const res = await login(email, password)
     if (!res.ok) return setError(res.msg)
     toast(res.msg)
   }

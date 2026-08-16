@@ -87,11 +87,11 @@ export default function Navbar({ onOpenCart, search, setSearch, page, setPage, o
           {navBtn('profile', '👤', t('nav.profile'))}
         </nav>
         <div className="nav-right">
-          <button className="lang-btn" onClick={toggleLang} title="Switch language">
+          <button className="lang-btn" onClick={toggleLang} title="Switch language" aria-label="Switch language">
             {lang === 'vi' ? 'EN' : 'VI'}
           </button>
           <NotificationsBell />
-          <button className="theme-btn" onClick={toggle} title="Đổi giao diện">
+          <button className="theme-btn" onClick={toggle} title="Đổi giao diện" aria-label="Đổi giao diện">
             <Ic e={dark ? '☀️' : '🌙'} size={18} />
           </button>
           <button className="cart-btn" onClick={onOpenCart}>

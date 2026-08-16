@@ -10,10 +10,10 @@ export default function SettingsAdmin() {
   const [newPass, setNewPass] = useState('')
   const [err, setErr] = useState('')
 
-  const doChange = (e) => {
+  const doChange = async (e) => {
     e.preventDefault()
     setErr('')
-    const res = changePassword(oldPass, newPass)
+    const res = await changePassword(oldPass, newPass)
     if (!res.ok) return setErr(res.msg)
     toast(res.msg)
     setOldPass(''); setNewPass('')

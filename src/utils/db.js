@@ -47,9 +47,12 @@ async function boot() {
   try {
     const { db } = await fetchJson(API + '/api/db')
     if (!db || typeof db !== 'object' || typeof db.keys !== 'object') throw new Error('bad payload')
-    // 1) server wins for every key it holds
+    // 1) server wins for every key it holds.
+    //    The server stores the exact localStorage string, so write it back
+    //    verbatim (do NOT re-stringify — that double-encodes JSON values and
+    //    turns e.g. shop_notifs from [] into the string "[]", crashing .filter).
     for (const [k, v] of Object.entries(db.keys)) {
-      const s = JSON.stringify(v)
+      const s = typeof v === 'string' ? v : JSON.stringify(v)
       localStorage.setItem(k, s)
       lastSeen[k] = s
     }

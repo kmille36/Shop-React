@@ -103,20 +103,69 @@ const MIME = {
 }
 
 // ---------- image upload ----------
+// Detect the real image type from the file's magic bytes (reliable even when
+// the request Content-Type is multipart/form-data, which it is for uploads).
+function detectImageExt(buf) {
+  if (!buf || buf.length < 12) return null
+  // PNG: 89 50 4E 47 0D 0A 1A 0A
+  if (buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47) return '.png'
+  // JPEG: FF D8 FF
+  if (buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return '.jpg'
+  // GIF: 'GIF8'
+  if (buf[0] === 0x47 && buf[1] === 0x49 && buf[2] === 0x46 && buf[3] === 0x38) return '.gif'
+  // WebP: 'RIFF'....'WEBP'
+  if (buf[0] === 0x52 && buf[1] === 0x49 && buf[2] === 0x46 && buf[3] === 0x46 &&
+      buf[8] === 0x57 && buf[9] === 0x45 && buf[10] === 0x42 && buf[11] === 0x50) return '.webp'
+  // AVIF / HEIF: 'ftyp' at offset 4 with 'avif'/'avis'
+  if (buf[4] === 0x66 && buf[5] === 0x74 && buf[6] === 0x79 && buf[7] === 0x70 &&
+      (buf[8] === 0x61 || buf[8] === 0x6d)) return '.avif'
+  // SVG / XML: starts with '<'
+  const head = buf.slice(0, 200).toString('utf8').trim().toLowerCase()
+  if (head.startsWith('<svg') || head.startsWith('<?xml')) return '.svg'
+  return null
+}
+
+// Parse a multipart/form-data body and return the Buffer of the first file part.
+// (The raw body starts with the boundary string, so we must extract the file
+//  part before we can sniff its magic bytes.)
+function extractMultipartFile(body, contentType) {
+  const m = /boundary=(?:"([^"]+)"|([^;\s]+))/i.exec(contentType || '')
+  if (!m) return null
+  const boundary = '--' + (m[1] || m[2])
+  const bBuf = Buffer.from(boundary)
+  // find first occurrence of boundary, then the next (start of part headers)
+  let start = body.indexOf(bBuf)
+  if (start === -1) return null
+  start += bBuf.length
+  // skip possible leading CRLF / "--" (end boundary)
+  if (body.slice(start, start + 2).toString() === '--') return null
+  if (body.slice(start, start + 2).toString() === '\r\n') start += 2
+  // part body begins after the first blank line (\r\n\r\n)
+  const headerEnd = body.indexOf('\r\n\r\n', start)
+  if (headerEnd === -1) return null
+  let dataStart = headerEnd + 4
+  // find the closing boundary after the data
+  let end = body.indexOf(bBuf, dataStart)
+  if (end === -1) return null
+  return body.slice(dataStart, end)
+}
+
 async function handleUpload(req, res) {
-  let body
-  try { body = await readBody(req, MAX_IMAGE_BYTES) }
+  let raw
+  try { raw = await readBody(req, MAX_IMAGE_BYTES) }
   catch { return sendJson(res, 413, { ok: false, error: 'file-too-large' }) }
 
-  const ct = (req.headers['content-type'] || '').toLowerCase()
-  let ext = '.bin'
-  if (ct.includes('png')) ext = '.png'
-  else if (ct.includes('jpeg') || ct.includes('jpg')) ext = '.jpg'
-  else if (ct.includes('gif')) ext = '.gif'
-  else if (ct.includes('webp')) ext = '.webp'
-  else if (ct.includes('svg')) ext = '.svg'
-  else if (ct.includes('avif')) ext = '.avif'
-  else if (ct.startsWith('image/')) ext = '.' + ct.split('/')[1].split(';')[0]
+  const ct = req.headers['content-type'] || ''
+  let body
+  if (/multipart\/form-data/i.test(ct)) {
+    body = extractMultipartFile(raw, ct)
+    if (!body) return sendJson(res, 400, { ok: false, error: 'no-file' })
+  } else {
+    body = raw // raw image bytes (Content-Type: image/*)
+  }
+
+  const ext = detectImageExt(body)
+  if (!ext) return sendJson(res, 415, { ok: false, error: 'not-an-image' })
 
   const id = Date.now().toString(36) + '-' + crypto.randomBytes(4).toString('hex')
   const fname = id + ext

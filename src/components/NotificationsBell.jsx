@@ -22,7 +22,7 @@ export default function NotificationsBell() {
 
   return (
     <div className="notif-wrap" ref={ref}>
-      <button className="theme-btn" onClick={() => { setOpen(o => !o); if (!open) markAll() }} title={t('nav.notif')}>
+      <button className="theme-btn" onClick={() => { setOpen(o => !o); if (!open) markAll() }} title={t('nav.notif')} aria-label={t('nav.notif')}>
         <Ic e="🔔" size={18} />
         {unseen > 0 && <span className="notif-dot">{unseen > 9 ? '9+' : unseen}</span>}
       </button>

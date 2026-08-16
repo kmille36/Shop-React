@@ -1,6 +1,7 @@
 import { createContext, useContext, useState } from 'react'
 
 import { trackEvent } from '../utils/track'
+import { hashPassword, verifyPassword } from '../utils/security'
 
 const AuthContext = createContext(null)
 export const POINTS_REDEEM_RATE = 1000 // 1000 điểm = 10.000đ (1 điểm = 10đ)
@@ -34,13 +35,13 @@ export function AuthProvider({ children }) {
     setUser(u)
   }
 
-  const register = ({ name, email, phone, password, referralCode }) => {
+  const register = async ({ name, email, phone, password, referralCode }) => {
     if (loadUsers().find(u => u.email === email))
       return { ok: false, msg: 'Email đã tồn tại!' }
     if (password.length < 6)
       return { ok: false, msg: 'Mật khẩu tối thiểu 6 ký tự!' }
     saveUser({
-      name, email, phone, password,
+      name, email, phone, password: await hashPassword(password),
       balance: 50000, points: 100, transactions: [
         { id: Date.now(), type: 'topup', amount: 50000, method: 'Quà tặng tân binh', date: Date.now() }
       ],
@@ -69,12 +70,15 @@ export function AuthProvider({ children }) {
     return { ok: true, msg: 'Đăng ký thành công! Tặng 50K + 100 điểm' + refMsg }
   }
 
-  const login = (email, password) => {
+  const login = async (email, password) => {
     const u = loadUsers().find(x => x.email === email)
     if (!u) return { ok: false, msg: 'Email không tồn tại!' }
     if (u.blocked) return { ok: false, msg: 'Tài khoản đã bị khóa. Liên hệ hỗ trợ!' }
-    if (u.password !== password) return { ok: false, msg: 'Sai mật khẩu!' }
-    saveUser({ ...u, balance: u.balance || 0, points: u.points || 0,
+    const ok = await verifyPassword(password, u.password)
+    if (!ok) return { ok: false, msg: 'Sai mật khẩu!' }
+    // auto-upgrade legacy plaintext password to a hash
+    saveUser({ ...u, password: u.password.startsWith('sha256$') || u.password.startsWith('fnv1a$') ? u.password : await hashPassword(password),
+      balance: u.balance || 0, points: u.points || 0,
       transactions: u.transactions || [], orders: u.orders || [],
       addresses: u.addresses || [],
       referralCode: u.referralCode || 'SR-' + Math.random().toString(36).slice(2, 8).toUpperCase() })

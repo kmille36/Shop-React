@@ -53,7 +53,7 @@ export default function SpinWheel({ onDismiss }) {
   return (
     <div className="modal-overlay spin-overlay" onClick={onDismiss}>
       <div className="glass modal spin-modal" onClick={e => e.stopPropagation()}>
-        <button className="close-btn modal-close" onClick={onDismiss}><Ic e="✕" size={18} /></button>
+        <button className="close-btn modal-close" onClick={onDismiss} aria-label="Đóng"><Ic e="✕" size={18} /></button>
         <h2 className="spin-title"><Ic e="🎡" size={22} /> {t('spin.title')}</h2>
         <p className="spin-desc">{t('spin.desc')}</p>
         <div className="wheel-wrap">

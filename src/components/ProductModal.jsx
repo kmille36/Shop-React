@@ -113,7 +113,7 @@ export default function ProductModal({ product, onClose, onRequireLogin, onView 
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="glass modal product-modal" onClick={e => e.stopPropagation()}>
-        <button className="close-btn modal-close" onClick={onClose}><Ic e="✕" size={18} /></button>
+        <button className="close-btn modal-close" onClick={onClose} aria-label="Đóng"><Ic e="✕" size={18} /></button>
         <div className="pm-grid">
           <div className="pm-img">
             {flashActive(product) && <span className="b-flash"><Ic e="⚡" size={12} /> FLASH SALE</span>}

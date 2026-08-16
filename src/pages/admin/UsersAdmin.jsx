@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useAdmin } from '../../context/AdminContext'
+import { hashPassword } from '../../utils/security'
 import { useToast } from '../../context/ToastContext'
 import { formatPrice } from '../../utils/format'
 import { downloadCSV } from '../../utils/csv'
@@ -30,7 +31,7 @@ export default function UsersAdmin() {
     }
     if (action.type === 'password') {
       if (val.length < 6) return toast('Mật khẩu tối thiểu 6 ký tự!', 'error')
-      resetUserPassword(u.email, val); toast('Đã đặt lại mật khẩu')
+      hashPassword(val).then(h => { resetUserPassword(u.email, h); toast('Đã đặt lại mật khẩu') })
     }
     if (action.type === 'balance') {
       const d = Number(val)

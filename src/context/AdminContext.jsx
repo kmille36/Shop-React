@@ -3,6 +3,7 @@ import { products as baseProducts } from '../data/products'
 import { logActivity } from './AuthContext'
 import { pushNotification } from './NotifyContext'
 import { seedCoupons } from '../data/coupons'
+import { hashPassword, verifyPassword } from '../utils/security'
 
 const AdminContext = createContext(null)
 
@@ -57,9 +58,10 @@ export function AdminProvider({ children }) {
   const [, force] = useState(0)
   const bump = () => force(x => x + 1)
 
-  const login = (email, password) => {
+  const login = async (email, password) => {
     const c = getAdminCreds()
-    if (email.trim().toLowerCase() === c.email && password === c.password) {
+    const passOk = await verifyPassword(password, c.password)
+    if (email.trim().toLowerCase() === c.email && passOk) {
       const a = { email: c.email, name: 'Quản trị viên', loginAt: Date.now() }
       save('shop_admin', JSON.stringify(a))
       setAdmin(a)
@@ -73,11 +75,11 @@ export function AdminProvider({ children }) {
     setAdmin(null)
   }
 
-  const changePassword = (oldPass, newPass) => {
+  const changePassword = async (oldPass, newPass) => {
     const c = getAdminCreds()
-    if (oldPass !== c.password) return { ok: false, msg: 'Mật khẩu cũ sai!' }
+    if (!(await verifyPassword(oldPass, c.password))) return { ok: false, msg: 'Mật khẩu cũ sai!' }
     if (newPass.length < 6) return { ok: false, msg: 'Mật khẩu mới tối thiểu 6 ký tự!' }
-    save('shop_admin_creds', JSON.stringify({ ...c, password: newPass }))
+    save('shop_admin_creds', JSON.stringify({ ...c, password: await hashPassword(newPass) }))
     return { ok: true, msg: 'Đã đổi mật khẩu quản trị!' }
   }
 
@@ -125,8 +127,8 @@ export function AdminProvider({ children }) {
     logActivity('user', `Xóa tài khoản ${email}`)
     bump()
   }
-  const resetUserPassword = (email, newPass) => {
-    mutateUser(email, u => ({ ...u, password: newPass }))
+  const resetUserPassword = async (email, newPass) => {
+    mutateUser(email, u => ({ ...u, password: newPass })) // caller hashes newPass
     bump()
   }
   const toggleUserBlock = (email) => {
