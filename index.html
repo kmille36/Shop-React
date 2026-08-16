@@ -3,8 +3,20 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="ShopReact - Siêu thị công nghệ giá tốt nhất. Bảo hành 12 tháng, đổi trả 7 ngày." />
+    <!-- CSP: no remote code (all JS is local bundle), images allowed from self + uploads + data (generated SVG) + https (external product photos) -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https:; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'" />
+    <meta name="description" content="ShopReact - Siêu thị công nghệ giá tốt nhất. Bảo hành 12 tháng, đổi trả 7 ngày, miễn phí ship từ 10 triệu." />
+    <meta name="author" content="ShopReact" />
+    <!-- Open Graph / share preview -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="ShopReact" />
+    <meta property="og:title" content="ShopReact - Cửa hàng trực tuyến" />
+    <meta property="og:description" content="Siêu thị công nghệ giá tốt nhất. Bảo hành 12 tháng, đổi trả 7 ngày, miễn phí ship từ 10 triệu." />
+    <meta property="og:image" content="/icons/icon-512.png" />
+    <meta name="twitter:card" content="summary" />
+    <link rel="icon" href="/icons/icon-192.png" sizes="192x192" />
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%9B%8D%EF%B8%8F%3C/text%3E%3C/svg%3E" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="theme-color" content="#6c5ce7" />
     <title>ShopReact - Cửa hàng trực tuyến</title>
