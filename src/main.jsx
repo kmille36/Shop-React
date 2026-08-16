@@ -15,7 +15,13 @@ initDb().finally(() => {
   )
 })
 
-// PWA: register service worker (production only)
+// PWA: register service worker (production only).
+// Re-check for an updated SW a few seconds after load so users always get
+// the latest bundle (prevents stale-cache bugs like missing UI fixes).
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
-  window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}))
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').then(reg => {
+      setTimeout(() => reg.update().catch(() => {}), 4000)
+    }).catch(() => {})
+  })
 }

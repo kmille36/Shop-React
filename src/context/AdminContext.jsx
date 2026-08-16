@@ -235,6 +235,44 @@ export function AdminProvider({ children }) {
     bump()
   }
 
+  // ===== Top-up requests (user requests a top-up, admin approves/rejects) =====
+  const getTopupRequests = () => load('shop_topup_requests', [])
+  const createTopupRequest = (email, name, amount, method) => {
+    const list = getTopupRequests()
+    list.unshift({ id: Date.now() + Math.random().toString(36).slice(2, 6), email, name, amount, method, status: 'pending', date: Date.now() })
+    save('shop_topup_requests', JSON.stringify(list))
+    logActivity('topup', `${name} <${email}> yêu cầu nạp ${amount.toLocaleString('vi-VN')}đ (${method})`)
+    bump()
+  }
+  const approveTopupRequest = (id) => {
+    const list = getTopupRequests()
+    const i = list.findIndex(r => r.id === id)
+    if (i === -1) return
+    const r = list[i]
+    list[i] = { ...r, status: 'approved', resolvedAt: Date.now() }
+    save('shop_topup_requests', JSON.stringify(list))
+    // credit the user's wallet
+    mutateUser(r.email, u => ({
+      ...u,
+      balance: (u.balance || 0) + r.amount,
+      transactions: [{ id: Date.now(), type: 'topup', amount: r.amount, method: 'Nạp tiền (được duyệt)', date: Date.now() }, ...(u.transactions || [])],
+    }))
+    pushNotification(`Nạp tiền ${r.amount.toLocaleString('vi-VN')}đ của bạn đã được duyệt — tiền đã vào ví! 💰`, r.email)
+    logActivity('topup', `Duyệt nạp ${r.amount.toLocaleString('vi-VN')}đ cho ${r.email}`)
+    bump()
+  }
+  const rejectTopupRequest = (id) => {
+    const list = getTopupRequests()
+    const i = list.findIndex(r => r.id === id)
+    if (i === -1) return
+    const r = list[i]
+    list[i] = { ...r, status: 'rejected', resolvedAt: Date.now() }
+    save('shop_topup_requests', JSON.stringify(list))
+    pushNotification(`Yêu cầu nạp tiền ${r.amount.toLocaleString('vi-VN')}đ của bạn đã bị từ chối. Liên hệ hỗ trợ.`, r.email)
+    logActivity('topup', `Từ chối nạp ${r.amount.toLocaleString('vi-VN')}đ của ${r.email}`)
+    bump()
+  }
+
   // ===== Blog =====
   const getBlog = () => load('shop_blog', [])
   const addBlogPost = (post) => {
@@ -284,6 +322,7 @@ export function AdminProvider({ children }) {
       getPriceAlerts, getStockAlerts, markAlertDone,
       getReturns, setReturnStatus,
       getBlog, addBlogPost, deleteBlogPost,
+      getTopupRequests, createTopupRequest, approveTopupRequest, rejectTopupRequest,
       importProducts,
     }}>
       {children}

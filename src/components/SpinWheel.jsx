@@ -65,8 +65,15 @@ export default function SpinWheel({ onDismiss }) {
                 transform: `rotate(${i * SEG}deg)`,
               }}>
                 <span className="wheel-seg-label" style={{ transform: `rotate(${-i * SEG - SEG / 2}deg) translate(0, -58px)` }}>
-                  {p.label}
-                  {p.code && <em className="wheel-seg-code">{p.code}</em>}
+                  <span style={{ display: 'block' }}>{p.label}</span>
+                  {p.code && (
+                    <em className="wheel-seg-code" style={{
+                      display: 'block', fontSize: '11px', fontWeight: 800, fontStyle: 'normal',
+                      color: '#fff', background: 'rgba(0,0,0,.28)', borderRadius: 8,
+                      padding: '1px 7px', margin: '3px auto 0', letterSpacing: '.4px',
+                      lineHeight: 1.3,
+                    }}>{p.code}</em>
+                  )}
                 </span>
               </div>
             ))}

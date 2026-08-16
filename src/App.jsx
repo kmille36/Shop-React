@@ -33,6 +33,7 @@ import { useStore } from './context/StoreContext'
 import { formatPrice } from './utils/format'
 import ProductImg from './components/ProductImg'
 import Ic from './components/Ic'
+import { loadBranding, applyBranding } from './utils/branding'
 
 const SORTS = ['default', 'price-asc', 'price-desc', 'rating', 'newest']
 const PRICE_RANGES = [
@@ -86,6 +87,8 @@ function Shop() {
   const [visible, setVisible] = useState(12) // pagination
   const [viewMode, setViewMode] = useState(() => localStorage.getItem('shop_view') || 'grid') // grid | list
   const [exitOpen, setExitOpen] = useState(true)
+  // apply admin-customized title/favicon
+  useEffect(() => { applyBranding(loadBranding()) }, [])
   const [spinOpen, setSpinOpen] = useState(() => {
     return localStorage.getItem('shop_spin_date') !== new Date().toDateString()
   })

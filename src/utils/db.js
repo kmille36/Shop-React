@@ -22,7 +22,8 @@ export const SYNC_KEYS = [
   'shop_giftwrap', 'shop_lang', 'shop_notifs', 'shop_price_alerts',
   'shop_product_overrides', 'shop_qa', 'shop_recent', 'shop_reviews',
   'shop_sold', 'shop_spin_date', 'shop_stock_alerts', 'shop_theme',
-  'shop_users', 'shop_view', 'shop_wishlist', 'shop_zone',
+  'shop_topup_requests', 'shop_users', 'shop_view', 'shop_wishlist', 'shop_zone',
+  'shop_branding',
 ]
 
 let serverUp = false

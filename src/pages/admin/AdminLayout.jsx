@@ -12,6 +12,8 @@ import AlertsAdmin from './AlertsAdmin'
 import ReturnsAdmin from './ReturnsAdmin'
 import BlogAdmin from './BlogAdmin'
 import ActivityAdmin from './ActivityAdmin'
+import TopupRequestsAdmin from './TopupRequestsAdmin'
+import BrandingAdmin from './BrandingAdmin'
 import SettingsAdmin from './SettingsAdmin'
 
 const NAV = [
@@ -24,6 +26,8 @@ const NAV = [
   { id: 'alerts', icon: '🔔', label: 'Báo giá/hàng' },
   { id: 'returns', icon: '↩️', label: 'Đổi trả' },
   { id: 'blog', icon: '📰', label: 'Tin tức' },
+  { id: 'topups', icon: '💸', label: 'Nạp tiền' },
+  { id: 'branding', icon: '🎨', label: 'Thương hiệu' },
   { id: 'activity', icon: '📈', label: 'Hoạt động' },
   { id: 'settings', icon: '⚙️', label: 'Cài đặt' },
 ]
@@ -78,6 +82,8 @@ export default function AdminLayout({ onBack }) {
         {tab === 'alerts' && <AlertsAdmin />}
         {tab === 'returns' && <ReturnsAdmin />}
         {tab === 'blog' && <BlogAdmin />}
+        {tab === 'topups' && <TopupRequestsAdmin />}
+        {tab === 'branding' && <BrandingAdmin />}
         {tab === 'activity' && <ActivityAdmin />}
         {tab === 'settings' && <SettingsAdmin />}
       </main>

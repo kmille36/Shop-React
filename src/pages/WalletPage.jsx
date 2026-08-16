@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { useAdmin } from '../context/AdminContext'
 import { useToast } from '../context/ToastContext'
 import { useLang } from '../utils/i18n'
 import { formatPrice } from '../utils/format'
@@ -23,6 +24,15 @@ export default function WalletPage({ onRequireLogin }) {
   const [processing, setProcessing] = useState(false)
   const [success, setSuccess] = useState(false)
   const [lastTopUp, setLastTopUp] = useState(null) // FIX: giữ số tiền thực để toast không đổi khi custom bị clear
+  const [mode, setMode] = useState('auto') // 'auto' = instant, 'request' = chờ admin duyệt
+  const { getTopupRequests, createTopupRequest } = useAdmin()
+  const [requests, setRequests] = useState([])
+  // refresh pending requests (admin may approve them in another tab)
+  useEffect(() => {
+    setRequests(getTopupRequests().filter(r => r.email === user?.email))
+    const t = setInterval(() => setRequests(getTopupRequests().filter(r => r.email === user?.email)), 2000)
+    return () => clearInterval(t)
+  }, [user?.email, user?.transactions?.length])
 
   if (!user) {
     return (
@@ -42,6 +52,15 @@ export default function WalletPage({ onRequireLogin }) {
 
   const doTopUp = () => {
     if (!finalAmount || finalAmount < 10000) return
+    if (mode === 'request') {
+      // send a request — admin approves it later
+      createTopupRequest(user.email, user.name, finalAmount, methodObj.name)
+      setRequests(getTopupRequests().filter(r => r.email === user.email))
+      toast(`Đã gửi yêu cầu nạp ${formatPrice(finalAmount)} — chờ admin duyệt! ⏳`)
+      setCustom('')
+      return
+    }
+    // instant top-up
     setProcessing(true)
     setTimeout(() => {
       topUp(finalAmount, methodObj.name)
@@ -70,6 +89,16 @@ export default function WalletPage({ onRequireLogin }) {
         {/* TopUp form */}
         <div className="glass topup-card">
           <h2><Ic e="💸" size={20} /> {t('wallet.topup')}</h2>
+          <div className="topup-mode">
+            <label className={`topup-mode-opt ${mode === 'auto' ? 'active' : ''}`}>
+              <input type="radio" name="topupmode" checked={mode === 'auto'} onChange={() => setMode('auto')} />
+              <span><Ic e="⚡" size={14} /> Nạp tự động</span>
+            </label>
+            <label className={`topup-mode-opt ${mode === 'request' ? 'active' : ''}`}>
+              <input type="radio" name="topupmode" checked={mode === 'request'} onChange={() => setMode('request')} />
+              <span><Ic e="📨" size={14} /> Gửi yêu cầu (chờ duyệt)</span>
+            </label>
+          </div>
           <div className="preset-grid">
             {PRESETS.map(p => (
               <button
@@ -99,8 +128,28 @@ export default function WalletPage({ onRequireLogin }) {
             ))}
           </div>
           <button className="primary-btn topup-btn" onClick={doTopUp} disabled={processing || !finalAmount || finalAmount < 10000}>
-            {processing ? <span><Ic e="⏳" size={15} /> Đang xử lý...</span> : <span><Ic e="💸" size={16} /> {t('wallet.topupBtn')} {formatPrice(finalAmount || 0)}</span>}
+            {processing ? <span><Ic e="⏳" size={15} /> Đang xử lý...</span>
+              : mode === 'request' ? <span><Ic e="📨" size={16} /> Gửi yêu cầu nạp {formatPrice(finalAmount || 0)}</span>
+              : <span><Ic e="💸" size={16} /> {t('wallet.topupBtn')} {formatPrice(finalAmount || 0)}</span>}
           </button>
+
+          {/* Top-up requests status */}
+          {requests.length > 0 && (
+            <div className="topup-requests">
+              <h3><Ic e="📨" size={15} /> Yêu cầu nạp tiền</h3>
+              {requests.slice(0, 5).map(r => (
+                <div key={r.id} className="topup-req-item">
+                  <div>
+                    <strong>{formatPrice(r.amount)}</strong>
+                    <small>{r.method} • {new Date(r.date).toLocaleString('vi-VN')}</small>
+                  </div>
+                  <span className={`topup-req-status ${r.status}`}>
+                    {r.status === 'pending' ? '⏳ Chờ duyệt' : r.status === 'approved' ? '✅ Đã duyệt' : '🚫 Bị từ chối'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* Gift card redemption */}
           <div className="giftcard-box">
