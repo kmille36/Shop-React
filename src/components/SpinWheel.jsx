@@ -64,7 +64,10 @@ export default function SpinWheel({ onDismiss }) {
                 background: p.color,
                 transform: `rotate(${i * SEG}deg)`,
               }}>
-                <span className="wheel-seg-label" style={{ transform: `rotate(${-i * SEG - SEG / 2}deg) translate(0, -58px)` }}>{p.label}</span>
+                <span className="wheel-seg-label" style={{ transform: `rotate(${-i * SEG - SEG / 2}deg) translate(0, -58px)` }}>
+                  {p.label}
+                  {p.code && <em className="wheel-seg-code">{p.code}</em>}
+                </span>
               </div>
             ))}
             <div className="wheel-hub"><Ic e="🎁" size={26} /></div>

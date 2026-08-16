@@ -1,0 +1,354 @@
+diff --git a/src/App.jsx b/src/App.jsx
+index 62b5c5e..cc1e2ab 100644
+--- a/src/App.jsx
++++ b/src/App.jsx
+@@ -85,6 +85,7 @@ function Shop() {
+   const [viewing, setViewing] = useState(null)
+   const [visible, setVisible] = useState(12) // pagination
+   const [viewMode, setViewMode] = useState(() => localStorage.getItem('shop_view') || 'grid') // grid | list
++  const [exitOpen, setExitOpen] = useState(true)
+   const [spinOpen, setSpinOpen] = useState(() => {
+     return localStorage.getItem('shop_spin_date') !== new Date().toDateString()
+   })
+@@ -234,7 +235,7 @@ function Shop() {
+       <CompareBar />
+       <CompareModal />
+       {spinOpen && <SpinWheel onDismiss={() => setSpinOpen(false)} />}
+-      <ExitIntentPopup onDismiss={() => {}} />
++      {exitOpen && <ExitIntentPopup onDismiss={() => setExitOpen(false)} />}
+       {authOpen && (
+         <AuthPage
+           mode={authMode}
+diff --git a/src/components/Navbar.jsx b/src/components/Navbar.jsx
+index f204ff6..81805f7 100644
+--- a/src/components/Navbar.jsx
++++ b/src/components/Navbar.jsx
+@@ -100,7 +100,9 @@ export default function Navbar({ onOpenCart, search, setSearch, page, setPage, o
+           </button>
+           {user ? (
+             <button className="user-chip" onClick={() => setPage('profile')} title="Hồ sơ của tôi">
+-              <span className="user-avatar">{user.name[0].toUpperCase()}</span>
++              <span className="user-avatar">
++                {user.avatar ? <img src={user.avatar} alt="" /> : user.name[0].toUpperCase()}
++              </span>
+               <span className="user-name">{user.name.split(' ')[0]}</span>
+             </button>
+           ) : (
+diff --git a/src/components/ProductImg.jsx b/src/components/ProductImg.jsx
+index 395ac11..16117a6 100644
+--- a/src/components/ProductImg.jsx
++++ b/src/components/ProductImg.jsx
+@@ -1,11 +1,15 @@
+-import { useState } from 'react'
++import { useState, useEffect } from 'react'
+ import Ic from './Ic'
+ 
+ // Renders a real product photo; falls back to emoji if the image fails to load
+ export default function ProductImg({ src, alt = '', className = '' }) {
+   const [failed, setFailed] = useState(false)
+-  // real photo (/images/...) OR generated data-URI (gallery detail shots, blog, variants)
+-  const isImage = typeof src === 'string' && (src.startsWith('/images/') || src.startsWith('data:'))
++  // reset error state when the source changes (e.g. switching products in a modal)
++  useEffect(() => { setFailed(false) }, [src])
++  // real photo: local (/images/...), external URL (http/https) or generated data-URI
++  const isImage = typeof src === 'string' && (
++    src.startsWith('/images/') || src.startsWith('data:') || /^https?:\/\//i.test(src)
++  )
+   if (!isImage || failed) {
+     if (!src) return <Ic e="📦" size={40} className={className} />
+     return <span className={`img-emoji ${className}`}>{src}</span>
+diff --git a/src/components/SpinWheel.jsx b/src/components/SpinWheel.jsx
+index 29259a5..bec8532 100644
+--- a/src/components/SpinWheel.jsx
++++ b/src/components/SpinWheel.jsx
+@@ -64,7 +64,10 @@ export default function SpinWheel({ onDismiss }) {
+                 background: p.color,
+                 transform: `rotate(${i * SEG}deg)`,
+               }}>
+-                <span className="wheel-seg-label" style={{ transform: `rotate(${-i * SEG - SEG / 2}deg) translate(0, -58px)` }}>{p.label}</span>
++                <span className="wheel-seg-label" style={{ transform: `rotate(${-i * SEG - SEG / 2}deg) translate(0, -58px)` }}>
++                  {p.label}
++                  {p.code && <em className="wheel-seg-code">{p.code}</em>}
++                </span>
+               </div>
+             ))}
+             <div className="wheel-hub"><Ic e="🎁" size={26} /></div>
+diff --git a/src/index.css b/src/index.css
+index 536a4aa..a95e4a1 100644
+--- a/src/index.css
++++ b/src/index.css
+@@ -156,11 +156,12 @@ body::after {
+ }
+ .user-chip:hover { background: rgba(255,255,255,.9); }
+ .user-avatar {
+-  width: 30px; height: 30px; border-radius: 50%;
++  width: 30px; height: 30px; border-radius: 50%; overflow: hidden; flex: none;
+   background: linear-gradient(135deg, var(--primary), var(--pink));
+   color: #fff; font-weight: 800; font-size: .9rem;
+   display: flex; align-items: center; justify-content: center;
+ }
++.user-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+ .user-name { font-size: .85rem; font-weight: 700; }
+ 
+ /* ===== Hero ===== */
+@@ -472,13 +473,40 @@ body::after {
+ .profile-grid { display: grid; grid-template-columns: 340px 1fr; gap: 20px; align-items: start; }
+ .profile-card { padding: 30px; text-align: center; }
+ .avatar {
+-  width: 84px; height: 84px; margin: 0 auto 14px; border-radius: 50%;
++  width: 84px; height: 84px; margin: 0 auto 10px; border-radius: 50%; overflow: hidden;
+   background: linear-gradient(135deg, var(--primary), var(--pink));
+   color: #fff; font-size: 2.2rem; font-weight: 800;
+   display: flex; align-items: center; justify-content: center;
+   box-shadow: 0 8px 24px rgba(108,92,231,.4);
+   border: 3px solid rgba(255,255,255,.7);
+ }
++.avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
++.avatar-wrap { display: flex; flex-direction: column; align-items: center; margin-bottom: 14px; }
++.avatar-actions { display: flex; gap: 8px; align-items: center; margin-top: 2px; }
++.avatar-edit {
++  display: inline-flex; align-items: center; gap: 5px; cursor: pointer;
++  font-size: .78rem; font-weight: 700; color: var(--primary);
++  background: rgba(108,92,231,.08); border: 1px dashed var(--primary);
++  border-radius: 999px; padding: 5px 12px; transition: background .2s;
++}
++.avatar-edit:hover { background: rgba(108,92,231,.16); }
++.avatar-remove {
++  display: inline-flex; align-items: center; gap: 4px; cursor: pointer;
++  font-size: .78rem; font-weight: 700; color: var(--danger);
++  background: rgba(214,48,49,.08); border: 1px dashed var(--danger);
++  border-radius: 999px; padding: 5px 12px; transition: background .2s;
++}
++.avatar-remove:hover { background: rgba(214,48,49,.16); }
++
++/* Admin: image upload row in product form */
++.img-upload-row { display: flex; align-items: center; gap: 10px; margin-top: -4px; }
++.img-preview {
++  width: 56px; height: 56px; border-radius: 10px; overflow: hidden; flex: none;
++  border: 1px solid rgba(0,0,0,.12); background: rgba(255,255,255,.6);
++  display: inline-flex; align-items: center; justify-content: center;
++}
++.img-preview img { width: 100%; height: 100%; object-fit: cover; display: block; }
++.img-preview .img-emoji { font-size: 1.5rem; }
+ .profile-card h2 { margin-bottom: 4px; }
+ .profile-email { color: var(--muted); font-size: .9rem; margin-bottom: 20px; }
+ .profile-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 20px; }
+@@ -664,12 +692,16 @@ html.dark .toast { background: rgba(30,34,53,.9); border-color: rgba(255,255,255
+ /* Card badges & wishlist */
+ .card-badges { position: absolute; top: 12px; left: 12px; z-index: 3; display: flex; flex-direction: column; gap: 5px; align-items: flex-start; }
+ .b-flash {
++  position: absolute; top: 10px; left: 10px; z-index: 4;
+   background: linear-gradient(135deg, #e84393, #d63031);
+   color: #fff; font-size: .68rem; font-weight: 800;
+   padding: 3px 10px; border-radius: 999px;
+   box-shadow: 0 4px 12px rgba(214,48,49,.4);
+   animation: pulse 1.5s ease-in-out infinite;
++  pointer-events: none;
+ }
++/* .b-flash is the first <span> child of .pm-img — don't let the 7rem emoji rule hit it */
++.pm-img > .b-flash { font-size: .68rem; }
+ @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+ .b-discount {
+   background: linear-gradient(135deg, var(--pink), #e84393);
+@@ -1469,6 +1501,11 @@ html.dark .similar-img { background: rgba(255,255,255,.08); }
+   position: absolute; top: 50%; left: 50%;
+   font-size: .72rem; font-weight: 800; color: #fff; white-space: nowrap;
+   text-shadow: 0 1px 3px rgba(0,0,0,.4);
++  display: flex; flex-direction: column; align-items: center; line-height: 1.2;
++}
++.wheel-seg-code {
++  font-style: normal; font-size: .55rem; font-weight: 700;
++  opacity: .92; letter-spacing: .3px; margin-top: 2px;
+ }
+ .wheel-hub {
+   position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 4;
+diff --git a/src/pages/ProfilePage.jsx b/src/pages/ProfilePage.jsx
+index 4c2387b..c5c971c 100644
+--- a/src/pages/ProfilePage.jsx
++++ b/src/pages/ProfilePage.jsx
+@@ -7,6 +7,7 @@ import { useLang } from '../utils/i18n'
+ import { formatPrice } from '../utils/format'
+ import ProductImg from '../components/ProductImg'
+ import Ic from '../components/Ic'
++import { fileToDataUrl } from '../utils/upload'
+ import CheckinCard from '../components/CheckinCard'
+ import Badges from '../components/Badges'
+ 
+@@ -116,6 +117,16 @@ export default function ProfilePage({ onRequireLogin }) {
+     setForm({ name: user.name, phone: user.phone || '' })
+     setEditing(true); setSaved(false)
+   }
++
++  const onAvatarFile = (e) => {
++    const file = e.target.files[0]
++    if (!file) return
++    if (file.size > 4 * 1024 * 1024) return toast('Ảnh quá lớn (tối đa 4MB)!', 'error')
++    fileToDataUrl(file, 256)
++      .then(url => { updateProfile({ avatar: url }); toast('Đã đổi ảnh đại diện! ✅') })
++      .catch(() => toast('Không đọc được file ảnh!', 'error'))
++    e.target.value = ''
++  }
+   const saveEdit = (e) => {
+     e.preventDefault()
+     updateProfile(form)
+@@ -139,7 +150,24 @@ export default function ProfilePage({ onRequireLogin }) {
+     <div className="page">
+       <div className="profile-grid">
+         <div className="glass profile-card">
+-          <div className="avatar">{(user.name || 'U')[0].toUpperCase()}</div>
++          <div className="avatar-wrap">
++            <div className="avatar">
++              {user.avatar
++                ? <img src={user.avatar} alt={user.name} />
++                : (user.name || 'U')[0].toUpperCase()}
++            </div>
++            <div className="avatar-actions">
++              <label className="avatar-edit" title="Chọn ảnh từ máy">
++                <Ic e="📷" size={14} /> Đổi ảnh
++                <input type="file" accept="image/*" style={{ display: 'none' }} onChange={onAvatarFile} />
++              </label>
++              {user.avatar && (
++                <button className="avatar-remove" onClick={() => { updateProfile({ avatar: null }); toast('Đã xóa ảnh đại diện', 'info') }}>
++                  <Ic e="🗑️" size={13} /> Xóa
++                </button>
++              )}
++            </div>
++          </div>
+           <h2>{user.name}</h2>
+           <p className="profile-email">{user.email}</p>
+           <div className="member-rank"><Ic e={rank.split(" ")[0]} size={16} className="inline-ic" /> {rank.split(" ").slice(1).join(" ")}</div>
+diff --git a/src/pages/admin/ProductsAdmin.jsx b/src/pages/admin/ProductsAdmin.jsx
+index 45008ee..163a6f0 100644
+--- a/src/pages/admin/ProductsAdmin.jsx
++++ b/src/pages/admin/ProductsAdmin.jsx
+@@ -2,6 +2,7 @@ import { useState } from 'react'
+ import { useAdmin } from '../../context/AdminContext'
+ import { useStore } from '../../context/StoreContext'
+ import { useToast } from '../../context/ToastContext'
++import { fileToDataUrl } from '../../utils/upload'
+ import { formatPrice } from '../../utils/format'
+ import { downloadCSV } from '../../utils/csv'
+ import { toLocalInput, fromLocalInput, flashActive } from '../../utils/flash'
+@@ -108,6 +109,16 @@ export default function ProductsAdmin() {
+ }
+ 
+ function EditModal({ product, onClose, onSave }) {
++  const { toast } = useToast()
++  const onUpload = (e) => {
++    const file = e.target.files[0]
++    if (!file) return
++    if (file.size > 4 * 1024 * 1024) return toast('Ảnh quá lớn (tối đa 4MB)!', 'error')
++    fileToDataUrl(file, 800)
++      .then(url => setF(prev => ({ ...prev, image: url })))
++      .catch(() => toast('Không đọc được file ảnh!', 'error'))
++    e.target.value = ''
++  }
+   const [f, setF] = useState({ price: product.price, oldPrice: product.oldPrice || '', stock: product.stock, name: product.name, category: product.category, flash: product.flash, image: product.image, desc: product.desc || '', flashStart: toLocalInput(product.flashStart), flashEnd: toLocalInput(product.flashEnd) })
+   return (
+     <div className="modal-overlay" onClick={onClose}>
+@@ -135,7 +146,20 @@ function EditModal({ product, onClose, onSave }) {
+               </select>
+             </label>
+           </div>
+-          <label>Ảnh (URL) <input value={f.image} onChange={e => setF({ ...f, image: e.target.value })} placeholder="/images/... hoặc emoji" /></label>
++          <label>Ảnh (URL hoặc emoji)
++            <input
++              value={(f.image || '').startsWith('data:') ? '' : (f.image || '')}
++              placeholder={(f.image || '').startsWith('data:') ? 'Đã chọn ảnh từ máy (xem bên dưới)' : '/images/... hoặc https://... hoặc emoji'}
++              onChange={e => setF({ ...f, image: e.target.value })}
++            />
++          </label>
++          <div className="img-upload-row">
++            <label className="ghost-btn small img-upload-btn" title="Chọn ảnh từ máy">
++              <Ic e="📤" size={14} /> Tải ảnh lên
++              <input type="file" accept="image/*" style={{ display: 'none' }} onChange={onUpload} />
++            </label>
++            {f.image && <span className="img-preview" title="Xem trước ảnh"><ProductImg src={f.image} alt="Xem trước" /></span>}
++          </div>
+           <label>Mô tả <textarea rows="2" value={f.desc} onChange={e => setF({ ...f, desc: e.target.value })} /></label>
+           <label className="pay-opt"><input type="checkbox" checked={f.flash} onChange={e => setF({ ...f, flash: e.target.checked })} /><span><Ic e="⚡" size={15} /> Flash sale</span></label>
+           {f.flash && (
+@@ -156,6 +180,16 @@ function EditModal({ product, onClose, onSave }) {
+ }
+ 
+ function AddModal({ onClose, onSave }) {
++  const { toast } = useToast()
++  const onUpload = (e) => {
++    const file = e.target.files[0]
++    if (!file) return
++    if (file.size > 4 * 1024 * 1024) return toast('Ảnh quá lớn (tối đa 4MB)!', 'error')
++    fileToDataUrl(file, 800)
++      .then(url => setF(prev => ({ ...prev, image: url })))
++      .catch(() => toast('Không đọc được file ảnh!', 'error'))
++    e.target.value = ''
++  }
+   const [f, setF] = useState({ name: '', price: '', oldPrice: '', stock: 10, category: 'Phụ kiện', flash: false, image: '📦', desc: '', flashStart: '', flashEnd: '' })
+   return (
+     <div className="modal-overlay" onClick={onClose}>
+@@ -182,7 +216,20 @@ function AddModal({ onClose, onSave }) {
+               </select>
+             </label>
+           </div>
+-          <label>Ảnh (URL hoặc emoji) <input value={f.image} onChange={e => setF({ ...f, image: e.target.value })} placeholder="/images/... hoặc 📱" /></label>
++          <label>Ảnh (URL hoặc emoji)
++            <input
++              value={(f.image || '').startsWith('data:') ? '' : (f.image || '')}
++              placeholder={(f.image || '').startsWith('data:') ? 'Đã chọn ảnh từ máy (xem bên dưới)' : '/images/... hoặc https://... hoặc emoji'}
++              onChange={e => setF({ ...f, image: e.target.value })}
++            />
++          </label>
++          <div className="img-upload-row">
++            <label className="ghost-btn small img-upload-btn" title="Chọn ảnh từ máy">
++              <Ic e="📤" size={14} /> Tải ảnh lên
++              <input type="file" accept="image/*" style={{ display: 'none' }} onChange={onUpload} />
++            </label>
++            {f.image && <span className="img-preview" title="Xem trước ảnh"><ProductImg src={f.image} alt="Xem trước" /></span>}
++          </div>
+           <label>Mô tả <textarea rows="2" value={f.desc} onChange={e => setF({ ...f, desc: e.target.value })} /></label>
+           <label className="pay-opt"><input type="checkbox" checked={f.flash} onChange={e => setF({ ...f, flash: e.target.checked })} /><span><Ic e="⚡" size={15} /> Flash sale</span></label>
+           {f.flash && (
+diff --git a/src/pages/admin/UsersAdmin.jsx b/src/pages/admin/UsersAdmin.jsx
+index cb42f5b..cbf81e9 100644
+--- a/src/pages/admin/UsersAdmin.jsx
++++ b/src/pages/admin/UsersAdmin.jsx
+@@ -75,7 +75,7 @@ export default function UsersAdmin() {
+               <tr key={u.email} className={u.blocked ? 'blocked' : ''}>
+                 <td>
+                   <div className="prod-cell">
+-                    <span className="user-avatar">{(u.name || 'U')[0].toUpperCase()}</span>
++                    <span className="user-avatar">{u.avatar ? <img src={u.avatar} alt="" /> : (u.name || 'U')[0].toUpperCase()}</span>
+                     <div><strong>{u.name}</strong><small className="muted">{u.email}</small></div>
+                   </div>
+                 </td>
+diff --git a/src/utils/upload.js b/src/utils/upload.js
+new file mode 100644
+index 0000000..47aa6db
+--- /dev/null
++++ b/src/utils/upload.js
+@@ -0,0 +1,26 @@
++// Reads an image file picked from the browser, downsizes it on a canvas and
++// returns a data-URL so it can be stored in localStorage without bloating it.
++// (product photos: max 800px, avatars: max 256px — see callers)
++export function fileToDataUrl(file, maxSide = 800, quality = 0.85) {
++  return new Promise((resolve, reject) => {
++    if (!file || !file.type.startsWith('image/')) return reject(new Error('not-image'))
++    const reader = new FileReader()
++    reader.onerror = () => reject(new Error('read-failed'))
++    reader.onload = () => {
++      const img = new Image()
++      img.onerror = () => reject(new Error('decode-failed'))
++      img.onload = () => {
++        const scale = Math.min(1, maxSide / Math.max(img.width, img.height))
++        const w = Math.max(1, Math.round(img.width * scale))
++        const h = Math.max(1, Math.round(img.height * scale))
++        const canvas = document.createElement('canvas')
++        canvas.width = w
++        canvas.height = h
++        canvas.getContext('2d').drawImage(img, 0, 0, w, h)
++        resolve(canvas.toDataURL('image/jpeg', quality))
++      }
++      img.src = reader.result
++    }
++    reader.readAsDataURL(file)
++  })
++}

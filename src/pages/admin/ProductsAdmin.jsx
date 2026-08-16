@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useAdmin } from '../../context/AdminContext'
 import { useStore } from '../../context/StoreContext'
 import { useToast } from '../../context/ToastContext'
+import { uploadImage } from '../../utils/upload'
 import { formatPrice } from '../../utils/format'
 import { downloadCSV } from '../../utils/csv'
 import { toLocalInput, fromLocalInput, flashActive } from '../../utils/flash'
@@ -108,6 +109,16 @@ export default function ProductsAdmin() {
 }
 
 function EditModal({ product, onClose, onSave }) {
+  const { toast } = useToast()
+  const onUpload = (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    if (file.size > 4 * 1024 * 1024) return toast('Ảnh quá lớn (tối đa 4MB)!', 'error')
+    uploadImage(file, 800)
+      .then(url => { setF(prev => ({ ...prev, image: url })); toast('Đã lưu ảnh! ✅') })
+      .catch(() => toast('Không đọc được file ảnh!', 'error'))
+    e.target.value = ''
+  }
   const [f, setF] = useState({ price: product.price, oldPrice: product.oldPrice || '', stock: product.stock, name: product.name, category: product.category, flash: product.flash, image: product.image, desc: product.desc || '', flashStart: toLocalInput(product.flashStart), flashEnd: toLocalInput(product.flashEnd) })
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -135,7 +146,20 @@ function EditModal({ product, onClose, onSave }) {
               </select>
             </label>
           </div>
-          <label>Ảnh (URL) <input value={f.image} onChange={e => setF({ ...f, image: e.target.value })} placeholder="/images/... hoặc emoji" /></label>
+          <label>Ảnh (URL hoặc emoji)
+            <input
+              value={(f.image || '').startsWith('data:') ? '' : (f.image || '')}
+              placeholder={(f.image || '').startsWith('data:') ? 'Đã chọn ảnh từ máy (xem bên dưới)' : '/images/... hoặc https://... hoặc emoji'}
+              onChange={e => setF({ ...f, image: e.target.value })}
+            />
+          </label>
+          <div className="img-upload-row">
+            <label className="ghost-btn small img-upload-btn" title="Chọn ảnh từ máy">
+              <Ic e="📤" size={14} /> Tải ảnh lên
+              <input type="file" accept="image/*" style={{ display: 'none' }} onChange={onUpload} />
+            </label>
+            {f.image && <span className="img-preview" title="Xem trước ảnh"><ProductImg src={f.image} alt="Xem trước" /></span>}
+          </div>
           <label>Mô tả <textarea rows="2" value={f.desc} onChange={e => setF({ ...f, desc: e.target.value })} /></label>
           <label className="pay-opt"><input type="checkbox" checked={f.flash} onChange={e => setF({ ...f, flash: e.target.checked })} /><span><Ic e="⚡" size={15} /> Flash sale</span></label>
           {f.flash && (
@@ -156,6 +180,16 @@ function EditModal({ product, onClose, onSave }) {
 }
 
 function AddModal({ onClose, onSave }) {
+  const { toast } = useToast()
+  const onUpload = (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    if (file.size > 4 * 1024 * 1024) return toast('Ảnh quá lớn (tối đa 4MB)!', 'error')
+    uploadImage(file, 800)
+      .then(url => { setF(prev => ({ ...prev, image: url })); toast('Đã lưu ảnh! ✅') })
+      .catch(() => toast('Không đọc được file ảnh!', 'error'))
+    e.target.value = ''
+  }
   const [f, setF] = useState({ name: '', price: '', oldPrice: '', stock: 10, category: 'Phụ kiện', flash: false, image: '📦', desc: '', flashStart: '', flashEnd: '' })
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -182,7 +216,20 @@ function AddModal({ onClose, onSave }) {
               </select>
             </label>
           </div>
-          <label>Ảnh (URL hoặc emoji) <input value={f.image} onChange={e => setF({ ...f, image: e.target.value })} placeholder="/images/... hoặc 📱" /></label>
+          <label>Ảnh (URL hoặc emoji)
+            <input
+              value={(f.image || '').startsWith('data:') ? '' : (f.image || '')}
+              placeholder={(f.image || '').startsWith('data:') ? 'Đã chọn ảnh từ máy (xem bên dưới)' : '/images/... hoặc https://... hoặc emoji'}
+              onChange={e => setF({ ...f, image: e.target.value })}
+            />
+          </label>
+          <div className="img-upload-row">
+            <label className="ghost-btn small img-upload-btn" title="Chọn ảnh từ máy">
+              <Ic e="📤" size={14} /> Tải ảnh lên
+              <input type="file" accept="image/*" style={{ display: 'none' }} onChange={onUpload} />
+            </label>
+            {f.image && <span className="img-preview" title="Xem trước ảnh"><ProductImg src={f.image} alt="Xem trước" /></span>}
+          </div>
           <label>Mô tả <textarea rows="2" value={f.desc} onChange={e => setF({ ...f, desc: e.target.value })} /></label>
           <label className="pay-opt"><input type="checkbox" checked={f.flash} onChange={e => setF({ ...f, flash: e.target.checked })} /><span><Ic e="⚡" size={15} /> Flash sale</span></label>
           {f.flash && (

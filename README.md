@@ -1,8 +1,8 @@
 # 🛍️ ShopReact — Website E-commerce React (v2)
 
-Website bán hàng công nghệ hoàn chỉnh với **khu vực Quản trị (Admin Panel 10 tab)**, build với **React 19 + Vite 8**, giao diện **Liquid Glass** (kính mờ, gradient động). 100% client-side, dữ liệu lưu `localStorage` — không cần backend.
+Website bán hàng công nghệ hoàn chỉnh với **khu vực Quản trị (Admin Panel 10 tab)**, build với **React 19 + Vite 8**, giao diện **Liquid Glass** (kính mờ, gradient động). Frontend đồng bộ với **server Node.js có database trong RAM** (tự lưu ra file định kỳ khi có thay đổi) — ảnh upload lưu trên disk của server, không cần cài thêm thư viện nào cho server.
 
-![react](https://img.shields.io/badge/React-19.2.8-61dafb) ![vite](https://img.shields.io/badge/Vite-8.2.1-646cff) ![icons](https://img.shields.io/badge/Icons-Lucide-6c5ce7) ![i18n](https://img.shields.io/badge/Lang-vi%2Fen-00b894) ![pwa](https://img.shields.io/badge/PWA-ready-6c5ce7) ![tests](https://img.shields.io/badge/Tests-4%20suites%20PASS-00b894)
+![react](https://img.shields.io/badge/React-19.2.8-61dafb) ![vite](https://img.shields.io/badge/Vite-8.2.1-646cff) ![icons](https://img.shields.io/badge/Icons-Lucide-6c5ce7) ![i18n](https://img.shields.io/badge/Lang-vi%2Fen-00b894) ![pwa](https://img.shields.io/badge/PWA-ready-6c5ce7) ![db](https://img.shields.io/badge/DB-in--RAM%20%2B%20auto--persist-00b894) ![tests](https://img.shields.io/badge/Tests-4%20suites%20PASS-00b894)
 
 ## ✨ Tính năng (~80)
 
@@ -22,8 +22,8 @@ Website bán hàng công nghệ hoàn chỉnh với **khu vực Quản trị (Ad
 - 📸 **Gallery nhiều ảnh** (ảnh thật + 2 ảnh chi tiết sinh động, bấm thumb để đổi)
 - ❓ **Hỏi đáp sản phẩm (Q&A)**: khách hỏi, chủ shop trả lời từ admin
 - 📉 **Báo giá giảm** + 📋 **Báo có hàng** (để SĐT → admin thông báo khi đạt điều kiện)
-- 🎡 **Vòng quay may mắn** (spin-to-win, 1 lần/ngày, ra mã giảm giá)
-- 🚪 **Exit-intent popup** (khách định rời trang → tặng mã `MAU10`)
+- 🎡 **Vòng quay may mắn** (spin-to-win, 1 lần/ngày, ra mã giảm giá — ô quay hiển thị cả mã)
+- 🚪 **Exit-intent popup** (khách định rời trang → tặng mã `MAU10`, đóng được bằng nút "Để lại")
 - 🌐 **Đa ngôn ngữ vi/en** (1 nút chuyển, ghi nhớ)
 - 🌙 **Dark mode** (liquid glass cả 2 chế độ, ghi nhớ)
 - 📱 **PWA** (manifest + service worker, offline, cài đặt được)
@@ -49,6 +49,7 @@ Website bán hàng công nghệ hoàn chỉnh với **khu vực Quản trị (Ad
 - **📅 Điểm danh ngày**: nhận 10–50 điểm (tăng theo chuỗi ngày)
 - **🏅 Thành tựu (badges)**: Đơn đầu tiên, Khách thân thiết, Tỷ phú, VIP, Sưu tầm, Đánh giá viên, Siêu chăm, Thích quà
 - Hồ sơ: thống kê, chỉnh sửa thông tin, lịch sử đơn hàng
+- 📷 **Avatar upload**: chọn ảnh từ máy (tự lưu server, fallback data-URL khi offline) + xóa ảnh
 - **🔁 Mua lại đơn cũ** (1 nút, tự tra giá/tồn kho hiện tại)
 - 📍 **Theo dõi đơn hàng** (timeline 4 bước) + hủy đơn COD
 - **🔄 Đổi trả**: khách yêu cầu (đơn đã giao) → admin duyệt/từ chối → **tự động hoàn tiền vào ví** + thông báo
@@ -90,6 +91,7 @@ Truy cập: link **"🛡️ Quản trị"** ở cuối trang (footer).
 
 ### 📱 Sản phẩm
 - **Sửa** giá, giá gốc, tồn kho, tên, danh mục, ảnh, mô tả, flash sale
+- 📤 **Ảnh sản phẩm**: nhập URL (ngoài/emoji) **hoặc tải file từ trình duyệt** (lưu server disk, có preview)
 - ⏰ **Lịch flash sale**: đặt giờ bắt đầu / kết thúc (badge chỉ hiện khi đang chạy)
 - **Thêm** sản phẩm mới · **Xóa** sản phẩm
 - 📥 **Nhập CSV hàng loạt** (name, category, price, oldPrice, stock, image, desc) · 📤 Xuất CSV
@@ -132,20 +134,56 @@ Truy cập: link **"🛡️ Quản trị"** ở cuối trang (footer).
 
 ---
 
+## 🗄️ Database (server Node.js — không cần cài thêm thư viện)
+
+Project có kèm **server Node.js thuần** (`server/index.js`) làm database:
+
+- **DB trong RAM** — toàn bộ dữ liệu chung (user, giỏ, wishlist, review, tồn kho, đơn, mã, Q&A, thẻ quà, blog, log...) nằm trong một object trong bộ nhớ.
+- **Load khi khởi động** — server đọc `data/db.json` (nếu có) vào RAM lúc start.
+- **Lưu file định kỳ khi có thay đổi** — mỗi thay đổi đánh dấu "dirty", server tự ghi `data/db.json` mỗi **2 giây** (viết atomic qua file `.tmp` + rename) và ghi lần cuối khi tắt server (SIGINT/SIGTERM).
+- **Ảnh lưu trên disk** — upload ảnh (sản phẩm, avatar) → lưu `data/uploads/<id>.<ext>` → serve tại `/uploads/<id>.<ext>` (cache immutable, chặn path traversal, giới hạn 8MB).
+- **Đồng bộ với frontend** (`src/utils/db.js`):
+  - Khi mở app: kéo DB từ server vào `localStorage` (server là nguồn sự thật), sau đó đẩy ngược các key chỉ có ở local (lần đầu / tạo khi offline).
+  - Trong lúc dùng: watcher 1s so sánh 28 key chung, tự push thay đổi (debounce 0.8s, retry sau 5s, `sendBeacon` khi đóng tab).
+  - **Offline-resilient**: tắt server thì app vẫn chạy hoàn toàn bằng `localStorage`; mở lại server thì tự đồng bộ.
+
+**API server** (port 3001):
+
+| Endpoint | Phương | Chức năng |
+|---|---|---|
+| `/api/health` | GET | kiểm tra server (uptime, số key, dirty) |
+| `/api/db` | GET | snapshot toàn bộ DB |
+| `/api/db/key` | POST | upsert 1 key (`{key, value}`; `value: null` = xóa) |
+| `/api/db/bulk` | POST | upsert nhiều key `{keys: {...}}` (dùng khi đóng tab) |
+| `/api/upload` | POST | upload ảnh (multipart, `Content-Type: image/*`) → `{url: "/uploads/..."}` |
+| `/uploads/<file>` | GET | serve ảnh đã upload |
+
+> Trong dev, Vite **proxy** `/api` + `/uploads` sang port 3001 (`vite.config.js`) nên frontend gọi cùng origin.
+> Biến môi trường: `PORT` (mặc định 3001), `SHOP_DATA_DIR` (mặc định `./data`), `SAVE_INTERVAL_MS` (mặc định 2000).
+
 ## 🚀 Chạy project
 
 ```bash
 # Yêu cầu: Node.js 20.19+ (hoặc 22.12+)
 npm install
-npm run dev        # http://localhost:5173
+npm run dev:all    # chạy server (3001) + frontend (5173) cùng lúc
+```
+
+Chạy tách 2 terminal:
+```bash
+npm run dev:server # chỉ server DB (http://localhost:3001)
+npm run dev        # chỉ frontend (http://localhost:5173)
 ```
 
 Build production:
 ```bash
 npm run build      # output: dist/
 npm run preview    # xem build (PWA hoạt động ở đây)
+npm start          # chạy server (serve /api + /uploads)
 ```
 
+> **Không bật server?** App vẫn chạy bình thường bằng `localStorage` (offline mode) — ảnh upload khi đó tự lưu dạng data-URL.
+>
 > **Lưu ý tunnel:** nếu truy cập qua tunnel (ngrok, pinggy...), config đã bật
 > `server.allowedHosts: true` trong `vite.config.js` nên hoạt động ngay.
 
@@ -154,15 +192,22 @@ npm run preview    # xem build (PWA hoạt động ở đây)
 ```
 shop-react/
 ├── index.html                  # + favicon SVG, meta, manifest (PWA)
-├── vite.config.js
-├── package.json
+├── vite.config.js              # + proxy /api + /uploads → server 3001
+├── package.json                # scripts: dev:all, dev:server, start
 ├── README.md
+├── server/
+│   └── index.js                # ⭐ DB trong RAM + auto-persist + upload ảnh (Node thuần, 0 dep)
+├── scripts/
+│   └── dev-all.js              # chạy server + Vite cùng lúc
+├── data/                       # dữ liệu runtime (đã gitignore)
+│   ├── db.json                 # snapshot DB (ghi định kỳ 2s khi có thay đổi)
+│   └── uploads/                # ảnh upload (sản phẩm, avatar)
 ├── public/
 │   ├── images/                 # 16 ảnh sản phẩm thật (đã nén)
 │   ├── manifest.webmanifest    # PWA
 │   └── sw.js                   # service worker (offline)
 └── src/
-    ├── main.jsx                # + đăng ký service worker
+    ├── main.jsx                # initDb() trước khi render + đăng ký service worker
     ├── App.jsx                 # điều hướng hash + lọc/sắp xếp + grid/list + pagination
     ├── index.css               # theme Liquid Glass (light + dark) + admin + 40+ component mới
     ├── data/
@@ -178,7 +223,9 @@ shop-react/
     │   ├── track.js            # phễu bán hàng (views/carts/orders)
     │   ├── badges.js           # 8 thành tựu
     │   ├── segments.js         # phân nhóm khách hàng
-    │   └── imggen.js           # sinh ảnh SVG (gallery, blog)
+    │   ├── imggen.js           # sinh ảnh SVG (gallery, blog)
+    │   ├── db.js               # ⭐ đồng bộ localStorage ↔ server DB (boot/push/beacon)
+    │   └── upload.js           # ⭐ uploadImage (server-first) + fileToDataUrl (fallback)
     ├── context/
     │   ├── ThemeContext.jsx    # dark mode
     │   ├── ToastContext.jsx    # thông báo
@@ -266,12 +313,14 @@ node smoke4.cjs
 | lucide-react | 1.31.0 |
 | qrcode | 1.5.x (QR VietQR) |
 | puppeteer | dev (kiểm thử) |
+| Node.js (server) | 20.19+ — server DB thuần, **0 dependency** |
 
 ## 📝 Ghi chú
 
-- Dữ liệu (tài khoản, giỏ, wishlist, review, tồn kho, điểm, đơn, mã tùy chỉnh, override sản phẩm, Q&A, alert, thẻ quà, blog, funnel, log hoạt động, so sánh, thông báo) lưu **localStorage** — xóa cache là reset.
-- Phiên admin + trang hiện tại lưu **sessionStorage** (giữ khi reload tab).
-- Ảnh sản phẩm: Wikimedia Commons (license tự do). Ảnh chi tiết gallery/blog: SVG tự sinh (không tốn dung lượng).
+- **Dữ liệu chung** (tài khoản, giỏ, wishlist, review, tồn kho, điểm, đơn, mã tùy chỉnh, override sản phẩm, Q&A, alert, thẻ quà, blog, funnel, log hoạt động, so sánh, thông báo) lưu trong **DB RAM của server** → tự ghi `data/db.json` định kỳ 2s khi có thay đổi → load lại khi khởi động. `localStorage` là cache mirror để UI chạy nhanh + offline.
+- **Ảnh upload** (sản phẩm, avatar) lưu **disk của server** trong `data/uploads/` (product lưu URL `/uploads/...`; chỉ fallback data-URL khi server offline).
+- Phiên đăng nhập + trang hiện tại vẫn theo trình duyệt (`localStorage`/`sessionStorage`).
+- Ảnh sản phẩm mặc định: Wikimedia Commons (license tự do). Ảnh chi tiết gallery/blog: SVG tự sinh (không tốn dung lượng).
 - Icon: Lucide (ISC license) — toàn bộ emoji UI đã thay bằng SVG.
 - PWA (service worker) chỉ kích hoạt ở **production build** (`npm run preview`).
 - CAPTCHA là câu hỏi toán đơn giản (chống spam bot, không phải bảo mật cao).

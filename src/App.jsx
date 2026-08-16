@@ -85,6 +85,7 @@ function Shop() {
   const [viewing, setViewing] = useState(null)
   const [visible, setVisible] = useState(12) // pagination
   const [viewMode, setViewMode] = useState(() => localStorage.getItem('shop_view') || 'grid') // grid | list
+  const [exitOpen, setExitOpen] = useState(true)
   const [spinOpen, setSpinOpen] = useState(() => {
     return localStorage.getItem('shop_spin_date') !== new Date().toDateString()
   })
@@ -234,7 +235,7 @@ function Shop() {
       <CompareBar />
       <CompareModal />
       {spinOpen && <SpinWheel onDismiss={() => setSpinOpen(false)} />}
-      <ExitIntentPopup onDismiss={() => {}} />
+      {exitOpen && <ExitIntentPopup onDismiss={() => setExitOpen(false)} />}
       {authOpen && (
         <AuthPage
           mode={authMode}

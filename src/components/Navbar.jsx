@@ -100,7 +100,9 @@ export default function Navbar({ onOpenCart, search, setSearch, page, setPage, o
           </button>
           {user ? (
             <button className="user-chip" onClick={() => setPage('profile')} title="Hồ sơ của tôi">
-              <span className="user-avatar">{user.name[0].toUpperCase()}</span>
+              <span className="user-avatar">
+                {user.avatar ? <img src={user.avatar} alt="" /> : user.name[0].toUpperCase()}
+              </span>
               <span className="user-name">{user.name.split(' ')[0]}</span>
             </button>
           ) : (

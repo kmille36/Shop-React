@@ -156,11 +156,12 @@ body::after {
 }
 .user-chip:hover { background: rgba(255,255,255,.9); }
 .user-avatar {
-  width: 30px; height: 30px; border-radius: 50%;
+  width: 30px; height: 30px; border-radius: 50%; overflow: hidden; flex: none;
   background: linear-gradient(135deg, var(--primary), var(--pink));
   color: #fff; font-weight: 800; font-size: .9rem;
   display: flex; align-items: center; justify-content: center;
 }
+.user-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .user-name { font-size: .85rem; font-weight: 700; }
 
 /* ===== Hero ===== */
@@ -472,13 +473,40 @@ body::after {
 .profile-grid { display: grid; grid-template-columns: 340px 1fr; gap: 20px; align-items: start; }
 .profile-card { padding: 30px; text-align: center; }
 .avatar {
-  width: 84px; height: 84px; margin: 0 auto 14px; border-radius: 50%;
+  width: 84px; height: 84px; margin: 0 auto 10px; border-radius: 50%; overflow: hidden;
   background: linear-gradient(135deg, var(--primary), var(--pink));
   color: #fff; font-size: 2.2rem; font-weight: 800;
   display: flex; align-items: center; justify-content: center;
   box-shadow: 0 8px 24px rgba(108,92,231,.4);
   border: 3px solid rgba(255,255,255,.7);
 }
+.avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.avatar-wrap { display: flex; flex-direction: column; align-items: center; margin-bottom: 14px; }
+.avatar-actions { display: flex; gap: 8px; align-items: center; margin-top: 2px; }
+.avatar-edit {
+  display: inline-flex; align-items: center; gap: 5px; cursor: pointer;
+  font-size: .78rem; font-weight: 700; color: var(--primary);
+  background: rgba(108,92,231,.08); border: 1px dashed var(--primary);
+  border-radius: 999px; padding: 5px 12px; transition: background .2s;
+}
+.avatar-edit:hover { background: rgba(108,92,231,.16); }
+.avatar-remove {
+  display: inline-flex; align-items: center; gap: 4px; cursor: pointer;
+  font-size: .78rem; font-weight: 700; color: var(--danger);
+  background: rgba(214,48,49,.08); border: 1px dashed var(--danger);
+  border-radius: 999px; padding: 5px 12px; transition: background .2s;
+}
+.avatar-remove:hover { background: rgba(214,48,49,.16); }
+
+/* Admin: image upload row in product form */
+.img-upload-row { display: flex; align-items: center; gap: 10px; margin-top: -4px; }
+.img-preview {
+  width: 56px; height: 56px; border-radius: 10px; overflow: hidden; flex: none;
+  border: 1px solid rgba(0,0,0,.12); background: rgba(255,255,255,.6);
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.img-preview img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.img-preview .img-emoji { font-size: 1.5rem; }
 .profile-card h2 { margin-bottom: 4px; }
 .profile-email { color: var(--muted); font-size: .9rem; margin-bottom: 20px; }
 .profile-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 20px; }
@@ -664,12 +692,16 @@ html.dark .toast { background: rgba(30,34,53,.9); border-color: rgba(255,255,255
 /* Card badges & wishlist */
 .card-badges { position: absolute; top: 12px; left: 12px; z-index: 3; display: flex; flex-direction: column; gap: 5px; align-items: flex-start; }
 .b-flash {
+  position: absolute; top: 10px; left: 10px; z-index: 4;
   background: linear-gradient(135deg, #e84393, #d63031);
   color: #fff; font-size: .68rem; font-weight: 800;
   padding: 3px 10px; border-radius: 999px;
   box-shadow: 0 4px 12px rgba(214,48,49,.4);
   animation: pulse 1.5s ease-in-out infinite;
+  pointer-events: none;
 }
+/* .b-flash is the first <span> child of .pm-img — don't let the 7rem emoji rule hit it */
+.pm-img > .b-flash { font-size: .68rem; }
 @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.06); } }
 .b-discount {
   background: linear-gradient(135deg, var(--pink), #e84393);
@@ -1469,6 +1501,11 @@ html.dark .similar-img { background: rgba(255,255,255,.08); }
   position: absolute; top: 50%; left: 50%;
   font-size: .72rem; font-weight: 800; color: #fff; white-space: nowrap;
   text-shadow: 0 1px 3px rgba(0,0,0,.4);
+  display: flex; flex-direction: column; align-items: center; line-height: 1.2;
+}
+.wheel-seg-code {
+  font-style: normal; font-size: .55rem; font-weight: 700;
+  opacity: .92; letter-spacing: .3px; margin-top: 2px;
 }
 .wheel-hub {
   position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 4;

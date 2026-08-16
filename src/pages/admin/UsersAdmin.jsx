@@ -75,7 +75,7 @@ export default function UsersAdmin() {
               <tr key={u.email} className={u.blocked ? 'blocked' : ''}>
                 <td>
                   <div className="prod-cell">
-                    <span className="user-avatar">{(u.name || 'U')[0].toUpperCase()}</span>
+                    <span className="user-avatar">{u.avatar ? <img src={u.avatar} alt="" /> : (u.name || 'U')[0].toUpperCase()}</span>
                     <div><strong>{u.name}</strong><small className="muted">{u.email}</small></div>
                   </div>
                 </td>

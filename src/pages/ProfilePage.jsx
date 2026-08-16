@@ -7,6 +7,7 @@ import { useLang } from '../utils/i18n'
 import { formatPrice } from '../utils/format'
 import ProductImg from '../components/ProductImg'
 import Ic from '../components/Ic'
+import { uploadImage } from '../utils/upload'
 import CheckinCard from '../components/CheckinCard'
 import Badges from '../components/Badges'
 
@@ -116,6 +117,16 @@ export default function ProfilePage({ onRequireLogin }) {
     setForm({ name: user.name, phone: user.phone || '' })
     setEditing(true); setSaved(false)
   }
+
+  const onAvatarFile = (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    if (file.size > 4 * 1024 * 1024) return toast('Ảnh quá lớn (tối đa 4MB)!', 'error')
+    uploadImage(file, 256)
+      .then(url => { updateProfile({ avatar: url }); toast('Đã đổi ảnh đại diện! ✅') })
+      .catch(() => toast('Không đọc được file ảnh!', 'error'))
+    e.target.value = ''
+  }
   const saveEdit = (e) => {
     e.preventDefault()
     updateProfile(form)
@@ -139,7 +150,24 @@ export default function ProfilePage({ onRequireLogin }) {
     <div className="page">
       <div className="profile-grid">
         <div className="glass profile-card">
-          <div className="avatar">{(user.name || 'U')[0].toUpperCase()}</div>
+          <div className="avatar-wrap">
+            <div className="avatar">
+              {user.avatar
+                ? <img src={user.avatar} alt={user.name} />
+                : (user.name || 'U')[0].toUpperCase()}
+            </div>
+            <div className="avatar-actions">
+              <label className="avatar-edit" title="Chọn ảnh từ máy">
+                <Ic e="📷" size={14} /> Đổi ảnh
+                <input type="file" accept="image/*" style={{ display: 'none' }} onChange={onAvatarFile} />
+              </label>
+              {user.avatar && (
+                <button className="avatar-remove" onClick={() => { updateProfile({ avatar: null }); toast('Đã xóa ảnh đại diện', 'info') }}>
+                  <Ic e="🗑️" size={13} /> Xóa
+                </button>
+              )}
+            </div>
+          </div>
           <h2>{user.name}</h2>
           <p className="profile-email">{user.email}</p>
           <div className="member-rank"><Ic e={rank.split(" ")[0]} size={16} className="inline-ic" /> {rank.split(" ").slice(1).join(" ")}</div>
