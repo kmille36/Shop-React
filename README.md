@@ -1,6 +1,6 @@
 # 🛍️ ShopReact — Website E-commerce React (v2)
 
-Website bán hàng công nghệ hoàn chỉnh với **khu vực Quản trị (Admin Panel 10 tab)**, build với **React 19 + Vite 8**, giao diện **Liquid Glass** (kính mờ, gradient động). Frontend đồng bộ với **server Node.js có database trong RAM** (tự lưu ra file định kỳ khi có thay đổi) — ảnh upload lưu trên disk của server, không cần cài thêm thư viện nào cho server.
+Website bán hàng công nghệ hoàn chỉnh với **khu vực Quản trị (Admin Panel 13 tab)**, build với **React 19 + Vite 8**, giao diện **Liquid Glass** (kính mờ, gradient động). Frontend đồng bộ với **server Node.js có database trong RAM** (tự lưu ra file định kỳ khi có thay đổi) — ảnh upload lưu trên disk của server, không cần cài thêm thư viện nào cho server.
 
 ![react](https://img.shields.io/badge/React-19.2.8-61dafb) ![vite](https://img.shields.io/badge/Vite-8.2.1-646cff) ![icons](https://img.shields.io/badge/Icons-Lucide-6c5ce7) ![i18n](https://img.shields.io/badge/Lang-vi%2Fen-00b894) ![pwa](https://img.shields.io/badge/PWA-ready-6c5ce7) ![db](https://img.shields.io/badge/DB-in--RAM%20%2B%20auto--persist-00b894) ![tests](https://img.shields.io/badge/Tests-4%20suites%20PASS-00b894)
 
@@ -56,6 +56,7 @@ Website bán hàng công nghệ hoàn chỉnh với **khu vực Quản trị (Ad
 
 ### 👛 Ví điện tử
 - Nạp tiền (preset 100K–5M hoặc tùy chỉnh, 3 phương thức)
+- **💸 2 chế độ nạp**: ⚡ **Nạp tự động** (vào ví ngay) hoặc 📨 **Gửi yêu cầu** (chờ admin duyệt — khách thấy trạng thái Chờ duyệt/Đã duyệt/Bị từ chối, nhận thông báo khi admin duyệt)
 - Lịch sử giao dịch
 - **🃏 Đổi thẻ quà tặng** (admin phát mã `GC-XXXXXX`)
 - Thanh toán nhanh bằng ví khi checkout
@@ -124,6 +125,16 @@ Truy cập: link **"🛡️ Quản trị"** ở cuối trang (footer).
 ### 📰 Tin tức
 - **Viết bài blog** (tiêu đề, tóm tắt, nội dung — ảnh tự sinh)
 - Xóa bài (bài mẫu không xóa được)
+
+### 💸 Nạp tiền (yêu cầu)
+- Danh sách yêu cầu nạp tiền của khách (số tiền, khách, phương thức, thời gian)
+- Lọc: Tất cả / Chờ duyệt / Đã duyệt / Từ chối
+- **Duyệt** → tự động **nạp tiền vào ví khách** + thông báo · **Từ chối** → thông báo
+
+### 🎨 Thương hiệu
+- Đổi **tiêu đề trang web** (tab trình duyệt) — áp dụng ngay cho tất cả khách
+- Đổi **favicon**: nhập URL hoặc **tải ảnh từ máy** (có preview dạng tab trình duyệt)
+- Khôi phục mặc định 1 nút
 
 ### 📈 Hoạt động
 - Log **60 sự kiện gần nhất**: đăng ký, đặt hàng, đổi trạng thái, sản phẩm, khách, mã, thẻ quà, giới thiệu, đổi trả, blog...
@@ -225,7 +236,9 @@ shop-react/
     │   ├── segments.js         # phân nhóm khách hàng
     │   ├── imggen.js           # sinh ảnh SVG (gallery, blog)
     │   ├── db.js               # ⭐ đồng bộ localStorage ↔ server DB (boot/push/beacon)
-    │   └── upload.js           # ⭐ uploadImage (server-first) + fileToDataUrl (fallback)
+    │   ├── upload.js           # ⭐ uploadImage (server-first) + fileToDataUrl (fallback)
+    │   ├── security.js         # ⭐ hash mật khẩu SHA-256 (Web Crypto)
+    │   └── branding.js         # ⭐ tiêu đề + favicon tùy chỉnh (admin)
     ├── context/
     │   ├── ThemeContext.jsx    # dark mode
     │   ├── ToastContext.jsx    # thông báo
@@ -261,7 +274,7 @@ shop-react/
         ├── BlogPage.jsx        # tin tức + đọc bài
         └── admin/
             ├── AdminLogin.jsx
-            ├── AdminLayout.jsx # sidebar 10 tab
+            ├── AdminLayout.jsx # sidebar 13 tab
             ├── Dashboard.jsx   # + biểu đồ doanh thu + phễu
             ├── OrdersAdmin.jsx # + in hóa đơn + CSV
             ├── ProductsAdmin.jsx # + lịch flash + nhập CSV
@@ -271,6 +284,8 @@ shop-react/
             ├── AlertsAdmin.jsx # báo giá/hàng + Q&A
             ├── ReturnsAdmin.jsx
             ├── BlogAdmin.jsx
+            ├── TopupRequestsAdmin.jsx # duyệt yêu cầu nạp tiền
+            ├── BrandingAdmin.jsx # tiêu đề + favicon
             ├── ActivityAdmin.jsx
             └── SettingsAdmin.jsx
 ```
@@ -319,6 +334,8 @@ node smoke4.cjs
 
 - **Dữ liệu chung** (tài khoản, giỏ, wishlist, review, tồn kho, điểm, đơn, mã tùy chỉnh, override sản phẩm, Q&A, alert, thẻ quà, blog, funnel, log hoạt động, so sánh, thông báo) lưu trong **DB RAM của server** → tự ghi `data/db.json` định kỳ 2s khi có thay đổi → load lại khi khởi động. `localStorage` là cache mirror để UI chạy nhanh + offline.
 - **Ảnh upload** (sản phẩm, avatar) lưu **disk của server** trong `data/uploads/` (product lưu URL `/uploads/...`; chỉ fallback data-URL khi server offline).
+- **Thương hiệu** (tiêu đề + favicon): admin đổi ở tab "Thương hiệu" — lưu `shop_branding`, áp dụng khi tải trang.
+- **Yêu cầu nạp tiền**: lưu `shop_topup_requests`; admin duyệt → tiền vào ví khách + thông báo.
 - Phiên đăng nhập + trang hiện tại vẫn theo trình duyệt (`localStorage`/`sessionStorage`).
 - Ảnh sản phẩm mặc định: Wikimedia Commons (license tự do). Ảnh chi tiết gallery/blog: SVG tự sinh (không tốn dung lượng).
 - Icon: Lucide (ISC license) — toàn bộ emoji UI đã thay bằng SVG.
